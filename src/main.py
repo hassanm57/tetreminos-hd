@@ -3,7 +3,10 @@
 
 import time
 import math
-from config import ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE
+from config import (
+    ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE,
+    DAS_DELAY, ARR_RATE, SOFT_DROP_SPEED
+)
 from engine import TetrisGame
 from audio import SynthwaveAudio
 from renderer import CanvasRenderer
@@ -28,6 +31,14 @@ class GameApp:
         self.audio = SynthwaveAudio()
         self.renderer = CanvasRenderer()
         
+        # Snappy key hold state (DAS & ARR)
+        self.left_held = False
+        self.right_held = False
+        self.down_held = False
+        self.hold_timer = 0.0
+        self.repeat_timer = 0.0
+        self.down_timer = 0.0
+
         self.last_frame_time = time.time()
         self.canvas = None
         self.ctx = None
@@ -48,6 +59,8 @@ class GameApp:
         # Bind keyboard events
         keydown_proxy = create_proxy(self.on_keydown)
         js.window.addEventListener("keydown", keydown_proxy)
+        keyup_proxy = create_proxy(self.on_keyup)
+        js.window.addEventListener("keyup", keyup_proxy)
 
         # Bind touch/mouse UI button events
         self.setup_ui_buttons()
@@ -80,13 +93,23 @@ class GameApp:
                 self.restart_game()
             return
 
-        # Movement and rotation
+        # Movement with snappy in-engine DAS hold
         if key in ["ArrowLeft", "a", "A"]:
             event.preventDefault()
-            self.game.move_left()
+            if not self.left_held:
+                self.left_held = True
+                self.right_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+                self.game.move_left()
         elif key in ["ArrowRight", "d", "D"]:
             event.preventDefault()
-            self.game.move_right()
+            if not self.right_held:
+                self.right_held = True
+                self.left_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+                self.game.move_right()
         elif key in ["ArrowUp", "w", "W", "x", "X"]:
             event.preventDefault()
             self.game.rotate(clockwise=True)
@@ -95,8 +118,11 @@ class GameApp:
             self.game.rotate(clockwise=False)
         elif key in ["ArrowDown", "s", "S"]:
             event.preventDefault()
-            self.game.soft_drop()
-            self.audio.play_soft_drop()
+            if not self.down_held:
+                self.down_held = True
+                self.down_timer = 0.0
+                self.game.soft_drop()
+                self.audio.play_soft_drop()
         elif key == " ":
             event.preventDefault()
             self.game.hard_drop()
@@ -106,6 +132,21 @@ class GameApp:
         elif key in ["p", "P", "Escape"]:
             event.preventDefault()
             self.game.is_paused = not self.game.is_paused
+
+    def on_keyup(self, event):
+        """Releases held keys to stop auto-repeat immediately."""
+        key = event.key
+        if key in ["ArrowLeft", "a", "A"]:
+            self.left_held = False
+            self.hold_timer = 0.0
+            self.repeat_timer = 0.0
+        elif key in ["ArrowRight", "d", "D"]:
+            self.right_held = False
+            self.hold_timer = 0.0
+            self.repeat_timer = 0.0
+        elif key in ["ArrowDown", "s", "S"]:
+            self.down_held = False
+            self.down_timer = 0.0
 
     def setup_ui_buttons(self):
         """Attaches click listeners to on-screen touch buttons for mobile/tablet."""
@@ -147,6 +188,12 @@ class GameApp:
         self.game = TetrisGame(enable_abilities=True)
         if self.game_mode == 'ROGUE':
             self.sector_mgr = SectorManager()
+        self.left_held = False
+        self.right_held = False
+        self.down_held = False
+        self.hold_timer = 0.0
+        self.repeat_timer = 0.0
+        self.down_timer = 0.0
         self.update_relic_modal_ui()
 
     def process_events(self):
@@ -259,6 +306,26 @@ class GameApp:
 
         # Only update game physics if not drafting relics
         if not (self.sector_mgr and self.sector_mgr.is_drafting):
+            # Snappy in-engine DAS (Delayed Auto Shift) and ARR (Auto Repeat Rate)
+            if not self.game.game_over and not self.game.is_paused:
+                if self.left_held or self.right_held:
+                    self.hold_timer += delta_time
+                    if self.hold_timer >= DAS_DELAY:
+                        self.repeat_timer += delta_time
+                        if self.repeat_timer >= ARR_RATE:
+                            self.repeat_timer = 0.0
+                            if self.left_held:
+                                self.game.move_left()
+                            elif self.right_held:
+                                self.game.move_right()
+
+                if self.down_held:
+                    self.down_timer += delta_time
+                    if self.down_timer >= SOFT_DROP_SPEED:
+                        self.down_timer = 0.0
+                        self.game.soft_drop()
+                        self.audio.play_soft_drop()
+
             self.game.update(delta_time)
             self.process_events()
 
