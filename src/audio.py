@@ -163,6 +163,11 @@ class SynthwaveAudio:
             # Heavy metallic thud
             self.play_tone(110.0, 0.18, wave_type='square', gain_level=0.12)
 
+    def play_power_alert(self):
+        """Rising futuristic chime when a Power Piece appears."""
+        self.play_tone(587.33, 0.08, wave_type='triangle', gain_level=0.06)
+        self.play_tone(880.0, 0.14, wave_type='sine', gain_level=0.08)
+
     def play_game_over(self):
         """Descending sad synth chime."""
         notes = [440.0, 392.0, 329.63, 261.63, 220.0]

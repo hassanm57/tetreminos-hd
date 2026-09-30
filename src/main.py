@@ -39,6 +39,9 @@ class GameApp:
         self.repeat_timer = 0.0
         self.down_timer = 0.0
 
+        # Mode Selection Modal state
+        self.selected_modal_mode = self.game_mode
+
         self.last_frame_time = time.time()
         self.canvas = None
         self.ctx = None
@@ -149,7 +152,7 @@ class GameApp:
             self.down_timer = 0.0
 
     def setup_ui_buttons(self):
-        """Attaches click listeners to on-screen touch buttons for mobile/tablet."""
+        """Attaches click listeners to on-screen touch buttons for mobile/tablet and modals."""
         button_actions = {
             "btn-left": lambda: self.game.move_left(),
             "btn-right": lambda: self.game.move_right(),
@@ -158,7 +161,11 @@ class GameApp:
             "btn-drop": lambda: self.game.hard_drop(),
             "btn-hold": lambda: self.game.hold(),
             "btn-restart": lambda: self.restart_game(),
-            "btn-mode": lambda: self.toggle_game_mode()
+            "btn-mode": lambda: self.open_mode_modal(),
+            "card-rogue": lambda: self.select_modal_mode('ROGUE'),
+            "card-classic": lambda: self.select_modal_mode('CLASSIC'),
+            "btn-mode-deploy": lambda: self.deploy_selected_mode(),
+            "btn-mode-cancel": lambda: self.close_mode_modal()
         }
 
         for btn_id, action in button_actions.items():
@@ -173,15 +180,58 @@ class GameApp:
                 proxy = create_proxy(make_handler(action))
                 btn.addEventListener("click", proxy)
 
-    def toggle_game_mode(self):
-        """Toggles between Classic Marathon and Rogue Sector Protocol."""
-        if self.game_mode == 'ROGUE':
-            self.game_mode = 'CLASSIC'
-            self.sector_mgr = None
-        else:
-            self.game_mode = 'ROGUE'
-            self.sector_mgr = SectorManager()
-        self.restart_game()
+    def open_mode_modal(self):
+        """Opens the Mode Selection Modal and pauses gameplay."""
+        modal = js.document.getElementById("modeModal")
+        if modal:
+            self.game.is_paused = True
+            self.selected_modal_mode = self.game_mode
+            self.update_mode_modal_selection()
+            modal.style.display = "flex"
+
+    def close_mode_modal(self):
+        """Closes the Mode Selection Modal without changing mode."""
+        modal = js.document.getElementById("modeModal")
+        if modal:
+            modal.style.display = "none"
+            self.game.is_paused = False
+
+    def select_modal_mode(self, mode):
+        """Highlights the selected mode card inside the modal."""
+        self.selected_modal_mode = mode
+        self.update_mode_modal_selection()
+
+    def update_mode_modal_selection(self):
+        """Updates CSS classes on the mode cards in the modal."""
+        card_rogue = js.document.getElementById("card-rogue")
+        card_classic = js.document.getElementById("card-classic")
+        if card_rogue and card_classic:
+            if self.selected_modal_mode == 'ROGUE':
+                card_rogue.classList.add("active")
+                card_classic.classList.remove("active")
+            else:
+                card_classic.classList.add("active")
+                card_rogue.classList.remove("active")
+
+    def deploy_selected_mode(self):
+        """Confirms the selected mode, updates button label, and restarts run."""
+        mode_btn = js.document.getElementById("btn-mode")
+        if self.selected_modal_mode != self.game_mode:
+            self.game_mode = self.selected_modal_mode
+            if self.game_mode == 'ROGUE':
+                self.sector_mgr = SectorManager()
+                if mode_btn:
+                    mode_btn.innerText = "MODE: ROGUE"
+            else:
+                self.sector_mgr = None
+                if mode_btn:
+                    mode_btn.innerText = "MODE: CLASSIC"
+            self.restart_game()
+        
+        modal = js.document.getElementById("modeModal")
+        if modal:
+            modal.style.display = "none"
+        self.game.is_paused = False
 
     def restart_game(self):
         """Reboots the game state."""
@@ -260,6 +310,9 @@ class GameApp:
                 self.audio.play_ability_sfx(ABILITY_FREEZE)
                 if self.sector_mgr and self.sector_mgr.has_relic('CHRONO_OVERCLOCK'):
                     self.game.freeze_timer = 14.0
+
+            elif etype == 'power_spawn':
+                self.audio.play_power_alert()
 
             elif etype == 'game_over':
                 self.audio.play_game_over()

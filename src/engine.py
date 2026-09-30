@@ -139,6 +139,10 @@ class TetrisGame:
         if self.freeze_pieces_remaining > 0:
             self.freeze_pieces_remaining -= 1
 
+        # Alert if newly spawned piece is a Power Piece
+        if self.current_piece and self.current_piece.ability != ABILITY_NONE:
+            self.pending_events.append({'type': 'power_spawn', 'ability': self.current_piece.ability})
+
         # Check for immediate game over (spawn collision)
         if not self.is_valid_position(self.current_piece):
             self.game_over = True
