@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/neuropol" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
@@ -48,6 +49,32 @@
           <p class="relic-sub">Select 1 Relic to upgrade your cyber-matrix for upcoming sectors:</p>
           <div id="relicCards" class="relic-cards-grid">
             <!-- Dynamically populated from Python -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Selection Modal -->
+      <div id="modeModal" class="relic-modal mode-modal" style="display: none;">
+        <div class="relic-modal-content mode-modal-content">
+          <h2 class="relic-header">⚡ SELECT OPERATIONAL PROTOCOL ⚡</h2>
+          <p class="relic-sub">Choose your game protocol. Changing mode initiates a fresh run:</p>
+          <div class="mode-cards-grid">
+            <div id="card-rogue" class="mode-card active">
+              <div class="mode-icon">⚔️</div>
+              <div class="mode-title">ROGUE PROTOCOL</div>
+              <div class="mode-badge">5 SECTORS // RELIC DRAFTS</div>
+              <div class="mode-desc">Battle through 5 escalating cyber sectors with glitch hazards, line quotas, and 3-card augment drafts!</div>
+            </div>
+            <div id="card-classic" class="mode-card">
+              <div class="mode-icon">♾️</div>
+              <div class="mode-title">CLASSIC MARATHON</div>
+              <div class="mode-badge">COMPETITIVE // ENDLESS</div>
+              <div class="mode-desc">Pure Guideline Tetris flow. Accelerating gravity, standard SRS kicks, full abilities, and endless high-score hunting.</div>
+            </div>
+          </div>
+          <div class="mode-actions">
+            <button id="btn-mode-deploy" class="cyber-btn deploy-btn">LAUNCH MISSION</button>
+            <button id="btn-mode-cancel" class="cyber-btn cancel-btn">RESUME CURRENT</button>
           </div>
         </div>
       </div>
