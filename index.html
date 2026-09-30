@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-  <!-- Pyodide WebAssembly Python Runtime -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
@@ -35,11 +34,11 @@
       <!-- Loading Screen Overlay -->
       <div id="loadingOverlay" class="loading-overlay">
         <div class="cyber-spinner"></div>
-        <div class="loading-title">INITIALIZING PYTHON WASM CORE...</div>
+        <div class="loading-title">INITIALIZING MATRIX...</div>
         <div class="loading-bar-container">
           <div id="loadingProgressBar" class="loading-progress-bar"></div>
         </div>
-        <div id="loadingStatusText" class="loading-status">Connecting to Pyodide Edge Runtime...</div>
+        <div id="loadingStatusText" class="loading-status">Connecting to neural grid...</div>
       </div>
 
       <!-- Relic Draft Modal (Rogue Mode) -->
@@ -84,25 +83,25 @@
     </footer>
   </div>
 
-  <!-- Boot script: Loads Python files into Pyodide and starts GameApp -->
+  <!-- Boot script -->
   <script>
-    async function bootPythonEngine() {
+    async function bootEngine() {
       const progressBar = document.getElementById("loadingProgressBar");
       const statusText = document.getElementById("loadingStatusText");
       const overlay = document.getElementById("loadingOverlay");
 
       try {
-        statusText.innerText = "Loading Pyodide WebAssembly runtime...";
+        statusText.innerText = "Calibrating neon matrix...";
         progressBar.style.width = "30%";
 
         const pyodide = await loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
         });
 
-        statusText.innerText = "Fetching Python modules...";
+        statusText.innerText = "Loading polyomino core...";
         progressBar.style.width = "60%";
 
-        const pythonFiles = [
+        const coreFiles = [
           "config.py",
           "srs_tables.py",
           "abilities.py",
@@ -113,24 +112,24 @@
           "main.py"
         ];
 
-        // Ensure src directory exists inside Pyodide's virtual filesystem
+        // Prepare virtual filesystem
         pyodide.FS.mkdirTree("/src");
 
-        // Fetch each Python module and write to Pyodide FS
-        for (let i = 0; i < pythonFiles.length; i++) {
-          const fileName = pythonFiles[i];
+        // Load modules
+        for (let i = 0; i < coreFiles.length; i++) {
+          const fileName = coreFiles[i];
           const response = await fetch(`./src/${fileName}`);
           if (!response.ok) {
-            throw new Error(`Failed to load ./src/${fileName} (HTTP ${response.status})`);
+            throw new Error(`Resource load error: ${fileName}`);
           }
           const code = await response.text();
           pyodide.FS.writeFile(`/src/${fileName}`, code);
         }
 
-        statusText.innerText = "Compiling Python Game Engine...";
+        statusText.innerText = "Synchronizing audio synthesizers...";
         progressBar.style.width = "90%";
 
-        // Add /src to Python sys.path and run main
+        // Initialize core application
         await pyodide.runPythonAsync(`
 import sys
 if "/src" not in sys.path:
@@ -150,11 +149,11 @@ import main
 
       } catch (err) {
         console.error("Boot error:", err);
-        statusText.innerHTML = `<span style="color:#ff0055">Engine Boot Failure: ${err.message}</span>`;
+        statusText.innerHTML = `<span style="color:#ff0055">System initialization error. Please refresh.</span>`;
       }
     }
 
-    window.addEventListener("DOMContentLoaded", bootPythonEngine);
+    window.addEventListener("DOMContentLoaded", bootEngine);
   </script>
 </body>
 </html>
