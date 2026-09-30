@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tetreminos HD: Neon Resonance 🎮⚡</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Pyodide WebAssembly Python Runtime -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+</head>
+<body>
+  <div class="stars-bg"></div>
+  <div class="grid-horizon"></div>
+
+  <div class="game-wrapper">
+    <!-- Cyberpunk Header -->
+    <header class="cyber-header">
+      <div class="logo-container">
+        <h1 class="glitch-text" data-text="TETREMINOS HD">TETREMINOS HD</h1>
+        <span class="subtitle">⚡ NEON RESONANCE // ROGUELIKE TACTICAL SYNTH ⚡</span>
+      </div>
+      <div class="header-controls">
+        <button id="btn-mode" class="cyber-btn mode-btn">MODE: ROGUE</button>
+        <button id="btn-restart" class="cyber-btn reset-btn">REBOOT [R]</button>
+      </div>
+    </header>
+
+    <!-- Canvas Frame -->
+    <div class="canvas-container">
+      <canvas id="gameCanvas" width="750" height="720"></canvas>
+
+      <!-- Loading Screen Overlay -->
+      <div id="loadingOverlay" class="loading-overlay">
+        <div class="cyber-spinner"></div>
+        <div class="loading-title">INITIALIZING PYTHON WASM CORE...</div>
+        <div class="loading-bar-container">
+          <div id="loadingProgressBar" class="loading-progress-bar"></div>
+        </div>
+        <div id="loadingStatusText" class="loading-status">Connecting to Pyodide Edge Runtime...</div>
+      </div>
+
+      <!-- Relic Draft Modal (Rogue Mode) -->
+      <div id="relicModal" class="relic-modal" style="display: none;">
+        <div class="relic-modal-content">
+          <h2 class="relic-header">⚡ SECTOR CLEARED // CHOOSE AN AUGMENT ⚡</h2>
+          <p class="relic-sub">Select 1 Relic to upgrade your cyber-matrix for upcoming sectors:</p>
+          <div id="relicCards" class="relic-cards-grid">
+            <!-- Dynamically populated from Python -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ability Legend -->
+    <div class="ability-legend">
+      <div class="legend-pill"><span class="icon">💣</span> Bomb: 3x3 Blast</div>
+      <div class="legend-pill"><span class="icon">⚡</span> Lightning: Row + Col Clear</div>
+      <div class="legend-pill"><span class="icon">🧲</span> Magnet: Closes Air Gaps</div>
+      <div class="legend-pill"><span class="icon">🧊</span> Freeze: Pauses Gravity</div>
+      <div class="legend-pill"><span class="icon">🔥</span> Burning: 3s Neighbor Fuse</div>
+      <div class="legend-pill"><span class="icon">🪨</span> Heavy: 3x Fast / Crush</div>
+    </div>
+
+    <!-- On-screen Controls (Keyboard / Mobile / Touch) -->
+    <div class="controls-panel">
+      <div class="touch-row">
+        <button id="btn-left" class="touch-btn">◄ LEFT</button>
+        <button id="btn-rotate" class="touch-btn accent">▲ ROTATE</button>
+        <button id="btn-right" class="touch-btn">RIGHT ►</button>
+      </div>
+      <div class="touch-row">
+        <button id="btn-hold" class="touch-btn purple">HOLD [C]</button>
+        <button id="btn-down" class="touch-btn">SOFT DROP ▼</button>
+        <button id="btn-drop" class="touch-btn cyan">HARD DROP ⤓</button>
+      </div>
+    </div>
+
+    <!-- Footer with instructions -->
+    <footer class="cyber-footer">
+      <span>Controls: <strong>[← / → / A / D]</strong> Move | <strong>[↑ / W / X]</strong> Rotate | <strong>[Z]</strong> Counter-Rotate | <strong>[Space]</strong> Hard Drop | <strong>[C / Shift]</strong> Hold | <strong>[P]</strong> Pause</span>
+    </footer>
+  </div>
+
+  <!-- Boot script: Loads Python files into Pyodide and starts GameApp -->
+  <script>
+    async function bootPythonEngine() {
+      const progressBar = document.getElementById("loadingProgressBar");
+      const statusText = document.getElementById("loadingStatusText");
+      const overlay = document.getElementById("loadingOverlay");
+
+      try {
+        statusText.innerText = "Loading Pyodide WebAssembly runtime...";
+        progressBar.style.width = "30%";
+
+        const pyodide = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+        });
+
+        statusText.innerText = "Fetching Python modules...";
+        progressBar.style.width = "60%";
+
+        const pythonFiles = [
+          "config.py",
+          "srs_tables.py",
+          "abilities.py",
+          "engine.py",
+          "audio.py",
+          "renderer.py",
+          "roguelike.py",
+          "main.py"
+        ];
+
+        // Ensure src directory exists inside Pyodide's virtual filesystem
+        pyodide.FS.mkdirTree("/src");
+
+        // Fetch each Python module and write to Pyodide FS
+        for (let i = 0; i < pythonFiles.length; i++) {
+          const fileName = pythonFiles[i];
+          const response = await fetch(`./src/${fileName}`);
+          if (!response.ok) {
+            throw new Error(`Failed to load ./src/${fileName} (HTTP ${response.status})`);
+          }
+          const code = await response.text();
+          pyodide.FS.writeFile(`/src/${fileName}`, code);
+        }
+
+        statusText.innerText = "Compiling Python Game Engine...";
+        progressBar.style.width = "90%";
+
+        // Add /src to Python sys.path and run main
+        await pyodide.runPythonAsync(`
+import sys
+if "/src" not in sys.path:
+    sys.path.insert(0, "/src")
+import main
+        `);
+
+        progressBar.style.width = "100%";
+        statusText.innerText = "System online! Ready to play.";
+
+        setTimeout(() => {
+          overlay.style.opacity = "0";
+          setTimeout(() => {
+            overlay.style.display = "none";
+          }, 400);
+        }, 300);
+
+      } catch (err) {
+        console.error("Boot error:", err);
+        statusText.innerHTML = `<span style="color:#ff0055">Engine Boot Failure: ${err.message}</span>`;
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", bootPythonEngine);
+  </script>
+</body>
+</html>
