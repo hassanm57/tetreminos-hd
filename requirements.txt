@@ -1,0 +1,4 @@
+# Tetreminos HD - Requirements
+# The game runs directly in the browser via Pyodide WebAssembly without any local installs!
+# These packages are only for local unit testing and development.
+pytest>=7.0.0
