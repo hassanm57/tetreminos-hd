@@ -1,4 +1,4 @@
-/* style.css - Cyberpunk Synthwave Neon Theme */
+/* style.css - Clean Pitch-Dark Cyber Minimalist Theme */
 
 @font-face {
   font-family: 'Neuropol';
@@ -16,8 +16,8 @@
 }
 
 body {
-  background-color: #050711;
-  color: #e2e8f0;
+  background-color: #000000;
+  color: #f1f5f9;
   font-family: 'Rajdhani', sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
@@ -25,28 +25,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-}
-
-/* Background Atmosphere */
-.stars-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
-  z-index: -2;
-}
-
-.grid-horizon {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 35vh;
-  background: linear-gradient(180deg, rgba(255, 0, 85, 0) 0%, rgba(0, 240, 240, 0.08) 100%);
-  pointer-events: none;
-  z-index: -1;
 }
 
 /* Main Container */
@@ -65,28 +43,27 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  background: rgba(11, 15, 36, 0.7);
-  border: 1px solid rgba(0, 240, 240, 0.3);
+  padding: 12px 18px;
+  background: #080808;
+  border: 1px solid #222222;
   border-radius: 6px;
   margin-bottom: 12px;
-  backdrop-filter: blur(8px);
 }
 
 .logo-container h1 {
   font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 2px;
-  color: #00f0f0;
-  text-shadow: 0 0 10px rgba(0, 240, 240, 0.6);
+  color: #ffffff;
+  text-shadow: none;
 }
 
 .subtitle {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  color: #ff0055;
-  letter-spacing: 1.5px;
+  color: #888888;
+  letter-spacing: 2px;
 }
 
 .header-controls {
@@ -95,33 +72,35 @@ body {
 }
 
 .cyber-btn {
-  background: #0f172a;
-  color: #00f0f0;
-  border: 1px solid #00f0f0;
+  background: #111111;
+  color: #e2e8f0;
+  border: 1px solid #333333;
   font-family: 'Neuropol', 'Orbitron', sans-serif;
   font-size: 11px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 7px 14px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .cyber-btn:hover {
-  background: #00f0f0;
-  color: #050711;
-  box-shadow: 0 0 12px rgba(0, 240, 240, 0.7);
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 .reset-btn {
-  border-color: #ff0055;
-  color: #ff0055;
+  border-color: #444444;
+  color: #ef4444;
 }
 
 .reset-btn:hover {
-  background: #ff0055;
+  background: #ef4444;
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(255, 0, 85, 0.7);
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
 /* Canvas Container */
@@ -132,15 +111,15 @@ body {
   justify-content: center;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 0 25px rgba(0, 240, 240, 0.25);
+  border: 1px solid #222222;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
 }
 
 #gameCanvas {
   display: block;
   max-width: 100%;
   height: auto;
-  border: 1px solid rgba(0, 240, 240, 0.4);
-  background: #060814;
+  background: #000000;
 }
 
 /* Loading Overlay */
@@ -150,7 +129,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(6, 8, 20, 0.95);
+  background: #000000;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -160,13 +139,12 @@ body {
 }
 
 .cyber-spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid rgba(0, 240, 240, 0.15);
-  border-top: 4px solid #00f0f0;
+  width: 50px;
+  height: 50px;
+  border: 3px solid #222222;
+  border-top: 3px solid #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  box-shadow: 0 0 15px rgba(0, 240, 240, 0.5);
   margin-bottom: 20px;
 }
 
@@ -177,18 +155,18 @@ body {
 
 .loading-title {
   font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 2px;
-  color: #00f0f0;
+  color: #ffffff;
   margin-bottom: 14px;
 }
 
 .loading-bar-container {
-  width: 320px;
-  height: 8px;
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 4px;
+  width: 300px;
+  height: 6px;
+  background: #111111;
+  border: 1px solid #222222;
+  border-radius: 3px;
   overflow: hidden;
   margin-bottom: 12px;
 }
@@ -196,34 +174,34 @@ body {
 .loading-progress-bar {
   width: 10%;
   height: 100%;
-  background: linear-gradient(90deg, #ff0055, #00f0f0);
+  background: #ffffff;
   transition: width 0.3s ease;
 }
 
 .loading-status {
   font-size: 13px;
-  color: #94a3b8;
+  color: #777777;
 }
 
-/* Relic Draft Modal */
+/* Modals (Relic, Mode, Controls) */
 .relic-modal {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(6, 8, 20, 0.92);
+  background: rgba(0, 0, 0, 0.94);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 20;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
 }
 
 .relic-modal-content {
-  background: #0c1024;
-  border: 2px solid #00f0f0;
-  box-shadow: 0 0 30px rgba(0, 240, 240, 0.4);
+  background: #0a0a0a;
+  border: 1px solid #333333;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
   padding: 24px;
   border-radius: 8px;
   text-align: center;
@@ -234,14 +212,14 @@ body {
 .relic-header {
   font-family: 'Neuropol', 'Orbitron', sans-serif;
   font-size: 16px;
-  color: #00f0f0;
+  color: #ffffff;
   margin-bottom: 8px;
 }
 
 .relic-sub {
-  font-size: 14px;
-  color: #94a3b8;
-  margin-bottom: 20px;
+  font-size: 13px;
+  color: #888888;
+  margin-bottom: 18px;
 }
 
 .relic-cards-grid {
@@ -251,22 +229,21 @@ body {
 }
 
 .relic-card {
-  background: #121936;
-  border: 1px solid #3b82f6;
+  background: #111111;
+  border: 1px solid #262626;
   border-radius: 6px;
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .relic-card:hover {
-  transform: translateY(-4px);
-  border-color: #00f0f0;
-  box-shadow: 0 0 16px rgba(0, 240, 240, 0.5);
-  background: #172147;
+  transform: translateY(-3px);
+  border-color: #666666;
+  background: #181818;
 }
 
 .relic-icon {
@@ -283,24 +260,24 @@ body {
 }
 
 .relic-rarity {
-  font-size: 11px;
-  color: #ff0055;
+  font-size: 10px;
+  color: #e2e8f0;
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .relic-desc {
   font-size: 12px;
-  color: #cbd5e1;
+  color: #94a3b8;
   line-height: 1.4;
   margin-bottom: 14px;
   flex-grow: 1;
 }
 
 .relic-btn {
-  background: #00f0f0;
-  color: #060814;
+  background: #ffffff;
+  color: #000000;
   font-family: 'Neuropol', 'Orbitron', sans-serif;
   font-size: 10px;
   font-weight: 700;
@@ -308,83 +285,6 @@ body {
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
-}
-
-/* Ability Legend */
-.ability-legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin: 12px 0;
-  width: 100%;
-}
-
-.legend-pill {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.legend-pill .icon {
-  font-size: 14px;
-}
-
-/* Touch Controls */
-.controls-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.touch-row {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.touch-btn {
-  flex: 1;
-  max-width: 140px;
-  background: #0d1326;
-  border: 1px solid #1e293b;
-  color: #e2e8f0;
-  font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 12px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-
-.touch-btn:active {
-  transform: scale(0.96);
-  background: #1e293b;
-}
-
-.touch-btn.accent {
-  border-color: #ffe600;
-  color: #ffe600;
-}
-
-.touch-btn.purple {
-  border-color: #b000ff;
-  color: #b000ff;
-}
-
-.touch-btn.cyan {
-  border-color: #00f0f0;
-  color: #00f0f0;
 }
 
 /* Mode Selection Modal */
@@ -400,8 +300,8 @@ body {
 }
 
 .mode-card {
-  background: #0d1326;
-  border: 2px solid #1e293b;
+  background: #111111;
+  border: 2px solid #222222;
   border-radius: 8px;
   padding: 18px 14px;
   cursor: pointer;
@@ -415,22 +315,21 @@ body {
 
 .mode-card:hover {
   transform: translateY(-3px);
-  border-color: #00f0f0;
-  box-shadow: 0 0 16px rgba(0, 240, 240, 0.4);
+  border-color: #555555;
 }
 
 .mode-card.active {
-  border-color: #00f0f0;
-  background: #111a38;
-  box-shadow: 0 0 20px rgba(0, 240, 240, 0.5);
+  border-color: #ffffff;
+  background: #181818;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
 }
 
 .mode-card.active::after {
   content: 'CURRENT ACTIVE';
   position: absolute;
   top: -10px;
-  background: #00f0f0;
-  color: #050711;
+  background: #ffffff;
+  color: #000000;
   font-family: 'Neuropol', 'Orbitron', sans-serif;
   font-size: 8px;
   font-weight: 700;
@@ -454,7 +353,7 @@ body {
 .mode-badge {
   font-size: 10px;
   font-weight: 700;
-  color: #ff0055;
+  color: #888888;
   letter-spacing: 1px;
   margin-bottom: 10px;
 }
@@ -472,39 +371,242 @@ body {
 }
 
 .deploy-btn {
-  background: #00f0f0;
-  color: #050711;
+  background: #ffffff;
+  color: #000000;
   font-size: 11px;
   padding: 10px 24px;
+  border: none;
 }
 
 .deploy-btn:hover {
-  background: #ffffff;
-  box-shadow: 0 0 16px rgba(0, 240, 240, 0.9);
+  background: #e2e8f0;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
 }
 
 .cancel-btn {
-  border-color: #64748b;
-  color: #94a3b8;
+  border-color: #333333;
+  color: #888888;
   font-size: 11px;
   padding: 10px 20px;
 }
 
 .cancel-btn:hover {
-  background: #1e293b;
+  background: #1c1c1c;
+  color: #ffffff;
+}
+
+/* Controls Modal */
+.controls-modal-content {
+  max-width: 580px;
+}
+
+.controls-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111111;
+  border: 1px solid #222222;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+
+.control-label {
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.control-keys kbd {
+  display: inline-block;
+  background: #1c1c1c;
+  border: 1px solid #333333;
+  border-bottom: 2px solid #555555;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: 'Neuropol', monospace, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: 4px;
+}
+
+/* Right-Side Collapsible Tactical Power Drawer */
+.power-drawer {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.power-drawer.collapsed {
+  transform: translate(320px, -50%);
+}
+
+.drawer-tab {
+  background: #0a0a0a;
+  border: 1px solid #333333;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 18px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #ffffff;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.8);
+  transition: all 0.2s ease;
+}
+
+.drawer-tab:hover {
+  background: #181818;
+  border-color: #555555;
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+.tab-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.tab-arrow {
+  font-size: 10px;
+  color: #888888;
+  transition: transform 0.3s ease;
+}
+
+.power-drawer:not(.collapsed) .tab-arrow {
+  transform: rotate(180deg);
+}
+
+.drawer-content {
+  width: 320px;
+  max-height: 85vh;
+  background: #080808;
+  border: 1px solid #222222;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 25px rgba(0, 0, 0, 0.95);
+  overflow-y: auto;
+}
+
+.drawer-header {
+  margin-bottom: 12px;
+  border-bottom: 1px solid #222222;
+  padding-bottom: 8px;
+}
+
+.drawer-title {
+  display: block;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.drawer-subtitle {
+  display: block;
+  font-size: 9px;
+  color: #777777;
+  letter-spacing: 1px;
+}
+
+.power-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.power-intel-card {
+  background: #111111;
+  border: 1px solid #222222;
+  border-left: 3px solid #555555;
+  border-radius: 4px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.power-intel-card:hover {
+  background: #161616;
+  transform: translateX(-2px);
+}
+
+.power-intel-card.bomb { border-left-color: #ff4500; }
+.power-intel-card.lightning { border-left-color: #00e5ff; }
+.power-intel-card.magnet { border-left-color: #c084fc; }
+.power-intel-card.freeze { border-left-color: #38bdf8; }
+.power-intel-card.burning { border-left-color: #ef4444; }
+.power-intel-card.heavy { border-left-color: #94a3b8; }
+
+.power-intel-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.power-intel-icon {
+  font-size: 20px;
+}
+
+.power-intel-name {
+  display: block;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.power-intel-tag {
+  display: block;
+  font-size: 9px;
+  color: #888888;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.power-intel-desc {
+  font-size: 11px;
+  color: #a1a1aa;
+  line-height: 1.4;
+}
+
+.power-intel-desc strong {
   color: #ffffff;
 }
 
 /* Footer */
 .cyber-footer {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 11px;
+  color: #666666;
   text-align: center;
-  padding: 6px 0;
+  padding: 14px 0 6px 0;
 }
 
 .cyber-footer strong {
-  color: #00f0f0;
+  color: #ffffff;
+  font-family: 'Neuropol', sans-serif;
 }
 
 /* Responsive Scaling */

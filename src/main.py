@@ -132,9 +132,23 @@ class GameApp:
         elif key in ["c", "C", "Shift"]:
             event.preventDefault()
             self.game.hold()
+        elif key in ['?', '/']:
+            event.preventDefault()
+            controls_modal = js.document.getElementById("controlsModal")
+            if controls_modal and controls_modal.style.display == "flex":
+                self.close_controls_modal()
+            else:
+                self.open_controls_modal()
         elif key in ["p", "P", "Escape"]:
             event.preventDefault()
-            self.game.is_paused = not self.game.is_paused
+            controls_modal = js.document.getElementById("controlsModal")
+            mode_modal = js.document.getElementById("modeModal")
+            if controls_modal and controls_modal.style.display == "flex":
+                self.close_controls_modal()
+            elif mode_modal and mode_modal.style.display == "flex":
+                self.close_mode_modal()
+            else:
+                self.game.is_paused = not self.game.is_paused
 
     def on_keyup(self, event):
         """Releases held keys to stop auto-repeat immediately."""
@@ -152,14 +166,11 @@ class GameApp:
             self.down_timer = 0.0
 
     def setup_ui_buttons(self):
-        """Attaches click listeners to on-screen touch buttons for mobile/tablet and modals."""
+        """Attaches click listeners to header buttons, drawers, and modals."""
         button_actions = {
-            "btn-left": lambda: self.game.move_left(),
-            "btn-right": lambda: self.game.move_right(),
-            "btn-down": lambda: (self.game.soft_drop(), self.audio.play_soft_drop()),
-            "btn-rotate": lambda: self.game.rotate(clockwise=True),
-            "btn-drop": lambda: self.game.hard_drop(),
-            "btn-hold": lambda: self.game.hold(),
+            "btn-controls": lambda: self.open_controls_modal(),
+            "btn-controls-close": lambda: self.close_controls_modal(),
+            "btn-toggle-drawer": lambda: self.toggle_power_drawer(),
             "btn-restart": lambda: self.restart_game(),
             "btn-mode": lambda: self.open_mode_modal(),
             "card-rogue": lambda: self.select_modal_mode('ROGUE'),
@@ -179,6 +190,29 @@ class GameApp:
                     return handler
                 proxy = create_proxy(make_handler(action))
                 btn.addEventListener("click", proxy)
+
+    def open_controls_modal(self):
+        """Opens the Operational Controls modal and pauses gameplay."""
+        modal = js.document.getElementById("controlsModal")
+        if modal:
+            self.game.is_paused = True
+            modal.style.display = "flex"
+
+    def close_controls_modal(self):
+        """Closes the Operational Controls modal and resumes gameplay."""
+        modal = js.document.getElementById("controlsModal")
+        if modal:
+            modal.style.display = "none"
+            self.game.is_paused = False
+
+    def toggle_power_drawer(self):
+        """Expands or collapses the right-side tactical power drawer."""
+        drawer = js.document.getElementById("powerDrawer")
+        if drawer:
+            if drawer.classList.contains("collapsed"):
+                drawer.classList.remove("collapsed")
+            else:
+                drawer.classList.add("collapsed")
 
     def open_mode_modal(self):
         """Opens the Mode Selection Modal and pauses gameplay."""

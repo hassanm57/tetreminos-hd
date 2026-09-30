@@ -92,16 +92,16 @@ class CanvasRenderer:
             shake_offset_y = random.uniform(-self.shake_magnitude, self.shake_magnitude)
             ctx.translate(shake_offset_x, shake_offset_y)
 
-        # 1. Clear background
-        ctx.fillStyle = '#060814'
+        # 1. Clear background - Fully dark
+        ctx.fillStyle = '#000000'
         ctx.fillRect(0, 0, 750, 720)
 
         # 2. Draw Main Matrix Background & Grid Lines
-        ctx.fillStyle = '#0b0f24'
+        ctx.fillStyle = '#050505'
         ctx.fillRect(offset_x, offset_y, board_pixel_w, board_pixel_h)
 
-        # Subtle neon grid lines
-        ctx.strokeStyle = '#161d3f'
+        # Subtle dark grid lines
+        ctx.strokeStyle = '#141414'
         ctx.lineWidth = 1
         for col in range(BOARD_WIDTH + 1):
             gx = offset_x + col * BLOCK_SIZE
@@ -117,14 +117,12 @@ class CanvasRenderer:
             ctx.lineTo(offset_x + board_pixel_w, gy)
             ctx.stroke()
 
-        # Board glowing border
-        # Board glowing border
-        ctx.strokeStyle = '#00f0f0'
-        ctx.shadowColor = '#00f0f0'
-        ctx.shadowBlur = 10
-        ctx.lineWidth = 2
+        # Board border - Clean dark titanium
+        ctx.strokeStyle = '#262626'
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.lineWidth = 1.5
         ctx.strokeRect(offset_x, offset_y, board_pixel_w, board_pixel_h)
-        ctx.shadowBlur = 0  # Reset shadow blur
 
         # 2.5. Alert banner if next piece is an upcoming Power Piece!
         if len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE:
@@ -295,15 +293,15 @@ class CanvasRenderer:
     def draw_hold_panel(self, ctx, game, px, py):
         """Draws the Hold Piece panel on the left."""
         ctx.save()
-        ctx.fillStyle = '#0b0f24'
+        ctx.fillStyle = '#080808'
         ctx.fillRect(px, py, 120, 120)
-        ctx.strokeStyle = '#b000ff'
+        ctx.strokeStyle = '#262626'
         ctx.lineWidth = 1.5
         ctx.strokeRect(px, py, 120, 120)
 
-        # Label in Neuropol
-        ctx.fillStyle = '#b000ff'
-        ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
+        # Label in Neuropol - Clean titanium white
+        ctx.fillStyle = '#cbd5e1'
+        ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText("HOLD [C]", px + 60, py + 20)
 
@@ -318,15 +316,15 @@ class CanvasRenderer:
         """Draws the Next Pieces preview queue on the right with power alerts."""
         ctx.save()
         panel_h = 360
-        ctx.fillStyle = '#0b0f24'
+        ctx.fillStyle = '#080808'
         ctx.fillRect(px, py, 130, panel_h)
-        ctx.strokeStyle = '#00f0f0'
+        ctx.strokeStyle = '#262626'
         ctx.lineWidth = 1.5
         ctx.strokeRect(px, py, 130, panel_h)
 
-        # Label in Neuropol
-        ctx.fillStyle = '#00f0f0'
-        ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
+        # Label in Neuropol - Clean titanium white
+        ctx.fillStyle = '#cbd5e1'
+        ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText("NEXT", px + 65, py + 22)
 

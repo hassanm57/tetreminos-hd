@@ -12,17 +12,15 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
-  <div class="stars-bg"></div>
-  <div class="grid-horizon"></div>
-
   <div class="game-wrapper">
-    <!-- Cyberpunk Header -->
+    <!-- Clean Dark Header -->
     <header class="cyber-header">
       <div class="logo-container">
-        <h1 class="glitch-text" data-text="TETREMINOS HD">TETREMINOS HD</h1>
-        <span class="subtitle">⚡ NEON RESONANCE // ROGUELIKE TACTICAL SYNTH ⚡</span>
+        <h1 class="logo-text">TETREMINOS HD</h1>
+        <span class="subtitle">TACTICAL POLYOMINO PROTOCOL</span>
       </div>
       <div class="header-controls">
+        <button id="btn-controls" class="cyber-btn">CONTROLS [?]</button>
         <button id="btn-mode" class="cyber-btn mode-btn">MODE: ROGUE</button>
         <button id="btn-restart" class="cyber-btn reset-btn">REBOOT [R]</button>
       </div>
@@ -78,37 +76,154 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Ability Legend -->
-    <div class="ability-legend">
-      <div class="legend-pill"><span class="icon">💣</span> Bomb: 3x3 Blast</div>
-      <div class="legend-pill"><span class="icon">⚡</span> Lightning: Row + Col Clear</div>
-      <div class="legend-pill"><span class="icon">🧲</span> Magnet: Closes Air Gaps</div>
-      <div class="legend-pill"><span class="icon">🧊</span> Freeze: Pauses Gravity</div>
-      <div class="legend-pill"><span class="icon">🔥</span> Burning: 3s Neighbor Fuse</div>
-      <div class="legend-pill"><span class="icon">🪨</span> Heavy: 3x Fast / Crush</div>
-    </div>
+      <!-- Controls Modal -->
+      <div id="controlsModal" class="relic-modal" style="display: none;">
+        <div class="relic-modal-content controls-modal-content">
+          <h2 class="relic-header">🎮 OPERATIONAL CONTROLS</h2>
+          <p class="relic-sub">Precision Guideline keyboard keybindings:</p>
+          
+          <div class="controls-grid">
+            <div class="control-row">
+              <span class="control-label">Move Left / Right</span>
+              <span class="control-keys"><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Rotate Clockwise (SRS)</span>
+              <span class="control-keys"><kbd>↑</kbd> or <kbd>W</kbd> or <kbd>X</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Rotate Counter-Clockwise</span>
+              <span class="control-keys"><kbd>Z</kbd> or <kbd>Ctrl</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Soft Drop</span>
+              <span class="control-keys"><kbd>↓</kbd> or <kbd>S</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Hard Drop</span>
+              <span class="control-keys"><kbd>Spacebar</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Hold Piece</span>
+              <span class="control-keys"><kbd>C</kbd> or <kbd>Shift</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Pause / Resume</span>
+              <span class="control-keys"><kbd>P</kbd> or <kbd>Esc</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Reboot Run</span>
+              <span class="control-keys"><kbd>R</kbd></span>
+            </div>
+            <div class="control-row">
+              <span class="control-label">Select Relic (Rogue)</span>
+              <span class="control-keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
+            </div>
+          </div>
 
-    <!-- On-screen Controls (Keyboard / Mobile / Touch) -->
-    <div class="controls-panel">
-      <div class="touch-row">
-        <button id="btn-left" class="touch-btn">◄ LEFT</button>
-        <button id="btn-rotate" class="touch-btn accent">▲ ROTATE</button>
-        <button id="btn-right" class="touch-btn">RIGHT ►</button>
+          <div class="mode-actions" style="margin-top: 20px;">
+            <button id="btn-controls-close" class="cyber-btn deploy-btn">RETURN TO GAME</button>
+          </div>
+        </div>
       </div>
-      <div class="touch-row">
-        <button id="btn-hold" class="touch-btn purple">HOLD [C]</button>
-        <button id="btn-down" class="touch-btn">SOFT DROP ▼</button>
-        <button id="btn-drop" class="touch-btn cyan">HARD DROP ⤓</button>
-      </div>
     </div>
 
-    <!-- Footer with instructions -->
+    <!-- Footer -->
     <footer class="cyber-footer">
-      <span>Controls: <strong>[← / → / A / D]</strong> Move | <strong>[↑ / W / X]</strong> Rotate | <strong>[Z]</strong> Counter-Rotate | <strong>[Space]</strong> Hard Drop | <strong>[C / Shift]</strong> Hold | <strong>[P]</strong> Pause</span>
+      <span>Made by <strong>Hassan Mansoor</strong> // Open Source</span>
     </footer>
   </div>
+
+  <!-- Collapsible Tactical Power-Ups Drawer (Right Side) -->
+  <aside id="powerDrawer" class="power-drawer collapsed">
+    <button id="btn-toggle-drawer" class="drawer-tab" title="Toggle Tactical Power-Up Intel">
+      <span class="tab-icon">⚡</span>
+      <span class="tab-label">ARSENAL</span>
+      <span id="tab-arrow" class="tab-arrow">◀</span>
+    </button>
+
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <span class="drawer-title">⚡ TACTICAL ARSENAL</span>
+        <span class="drawer-subtitle">SPECIAL MINO PAYLOAD INTEL</span>
+      </div>
+
+      <div class="power-cards-list">
+        <!-- Bomb -->
+        <div class="power-intel-card bomb">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">💣</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">BOMB MINO</span>
+              <span class="power-intel-tag">SURFACE DETONATION</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Clears a <strong>3×3 perimeter</strong> on lock. Annihilates high spikes and unreachable holes.</div>
+        </div>
+
+        <!-- Lightning -->
+        <div class="power-intel-card lightning">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">⚡</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">LIGHTNING MINO</span>
+              <span class="power-intel-tag">IONIC DISCHARGE</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Instantly vaporizes its <strong>entire row and column</strong> upon locking into place.</div>
+        </div>
+
+        <!-- Magnet -->
+        <div class="power-intel-card magnet">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">🧲</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">MAGNET MINO</span>
+              <span class="power-intel-tag">GRAVITATIONAL VORTEX</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Pulls floating blocks downward to fill <strong>empty air pockets</strong> under overhangs.</div>
+        </div>
+
+        <!-- Freeze -->
+        <div class="power-intel-card freeze">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">🧊</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">FREEZE MINO</span>
+              <span class="power-intel-tag">CRYO MATRIX</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Flash-freezes matrix. <strong>Gravity halts for 8s</strong> or 3 pieces for free tactical placement.</div>
+        </div>
+
+        <!-- Burning -->
+        <div class="power-intel-card burning">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">🔥</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">BURNING MINO</span>
+              <span class="power-intel-tag">THERMITE FUSE</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Ticking 3-second fuse on lock. Detonates to <strong>melt all 4 orthogonal neighbor blocks</strong>.</div>
+        </div>
+
+        <!-- Heavy -->
+        <div class="power-intel-card heavy">
+          <div class="power-intel-top">
+            <span class="power-intel-icon">🪨</span>
+            <div class="power-intel-meta">
+              <span class="power-intel-name">HEAVY MINO</span>
+              <span class="power-intel-tag">DENSE OBSIDIAN</span>
+            </div>
+          </div>
+          <div class="power-intel-desc">Falls at <strong>3× speed</strong> and <strong>cannot rotate</strong>. Crushes damaged blocks beneath it.</div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <!-- Boot script -->
   <script>
