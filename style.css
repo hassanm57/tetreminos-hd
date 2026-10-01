@@ -627,6 +627,13 @@ html.touch-device .mobile-controls {
   touch-action: none;
 }
 
+/* Redundant desktop PC safeguard: hide controls on any device with hover and fine mouse pointer */
+@media (hover: hover) and (pointer: fine) {
+  #mobileControls, .mobile-controls {
+    display: none !important;
+  }
+}
+
 /* Quick Utility Row */
 .mobile-utility-row {
   display: flex;
