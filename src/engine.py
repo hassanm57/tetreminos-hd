@@ -90,6 +90,7 @@ class TetrisGame:
         # Tactical abilities state
         self.freeze_timer = 0.0
         self.freeze_pieces_remaining = 0
+        self.last_cleared_rows = []
 
         # Event log for audio and visual effects (consumed by renderer/audio each tick)
         self.pending_events = []
@@ -416,6 +417,9 @@ class TetrisGame:
             if is_full:
                 full_row_indices.append(y)
 
+        # Store cleared row indices for visual line-break animations
+        self.last_cleared_rows = list(full_row_indices)
+
         # Remove the full rows and insert fresh empty rows at the very top (index 0)
         for row_idx in full_row_indices:
             del self.board[row_idx]
@@ -488,6 +492,7 @@ class TetrisGame:
         self.pending_events.append({
             'type': 'line_clear',
             'lines': lines,
+            'cleared_rows': list(getattr(self, 'last_cleared_rows', [])),
             'is_b2b': self.back_to_back and multiplier > 1.0,
             'combo': self.combo,
             't_spin': self.t_spin_type is not None

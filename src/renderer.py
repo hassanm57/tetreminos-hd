@@ -348,6 +348,94 @@ class FireEruptionEffect:
         ctx.restore()
 
 
+class LineBreakExplosionEffect:
+    """
+    Punchy, clean line break animation that generates at the center of a cleared row
+    and explodes outward horizontally to the left and right with high-intensity laser core,
+    plasma aura, and dual expanding blast flare heads.
+    """
+    def __init__(self, row_y, mid_x, cy, board_w, duration=0.38, color='#00f0f0'):
+        self.row_y = row_y
+        self.mid_x = mid_x
+        self.cy = cy
+        self.board_w = board_w
+        self.duration = duration
+        self.elapsed = 0.0
+        self.color = color
+
+    def update(self, dt):
+        self.elapsed += dt
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+
+        progress = min(1.0, self.elapsed / self.duration)
+        # Fast explosive ease-out (cubic)
+        ease = 1.0 - math.pow(1.0 - progress, 3)
+        alpha = math.sin((1.0 - progress) * (math.pi / 2))
+
+        half_w = (self.board_w / 2.0) * ease
+        x1 = offset_x + self.mid_x - half_w
+        x2 = offset_x + self.mid_x + half_w
+        y = offset_y + self.cy
+
+        ctx.save()
+
+        # 1. Broad vibrant ambient plasma glow
+        ctx.globalAlpha = alpha * 0.7
+        ctx.strokeStyle = self.color
+        ctx.shadowColor = self.color
+        ctx.shadowBlur = 24
+        ctx.lineWidth = max(2.0, (BLOCK_SIZE * 0.95) * (1.0 - progress * 0.6))
+        ctx.beginPath()
+        ctx.moveTo(x1, y)
+        ctx.lineTo(x2, y)
+        ctx.stroke()
+
+        # 2. Electric neon beam
+        ctx.globalAlpha = alpha * 0.9
+        ctx.strokeStyle = '#38bdf8'
+        ctx.shadowBlur = 12
+        ctx.lineWidth = max(1.5, (BLOCK_SIZE * 0.5) * (1.0 - progress * 0.4))
+        ctx.beginPath()
+        ctx.moveTo(x1, y)
+        ctx.lineTo(x2, y)
+        ctx.stroke()
+
+        # 3. Blinding pure white core
+        ctx.globalAlpha = alpha
+        ctx.strokeStyle = '#ffffff'
+        ctx.shadowColor = '#ffffff'
+        ctx.shadowBlur = 8
+        ctx.lineWidth = max(1.0, (BLOCK_SIZE * 0.25) * (1.0 - progress))
+        ctx.beginPath()
+        ctx.moveTo(x1, y)
+        ctx.lineTo(x2, y)
+        ctx.stroke()
+
+        # 4. Outward exploding blast flare heads leading at left and right wave fronts
+        head_r = max(2.5, (BLOCK_SIZE * 0.65) * (1.0 - progress * 0.4))
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = self.color
+        ctx.shadowBlur = 16
+
+        # Left flare
+        ctx.beginPath()
+        ctx.arc(x1, y, head_r, 0, math.pi * 2)
+        ctx.fill()
+
+        # Right flare
+        ctx.beginPath()
+        ctx.arc(x2, y, head_r, 0, math.pi * 2)
+        ctx.fill()
+
+        ctx.restore()
+
+
 class FloatingBadge:
     """
     Sleek glowing cyberpunk badge announcing ability activation and impacts.
@@ -479,6 +567,7 @@ class CanvasRenderer:
         self.fire_eruptions = []
         self.floating_badges = []
         self.screen_flashes = []
+        self.line_breaks = []
         self.screen_shake_time = 0.0
         self.shake_magnitude = 0.0
 
@@ -500,6 +589,73 @@ class CanvasRenderer:
         cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
         for _ in range(count):
             self.particles.append(Particle(cx, cy, color, style='spark', size=random.uniform(2.5, 5.0)))
+
+    def trigger_line_clear_effect(self, cleared_rows, lines=1):
+        """
+        Explosive outward line break animation with screen flash, central shockwave,
+        and high-energy plasma laser bursting from the middle to the left and right.
+        """
+        board_pixel_w = BOARD_WIDTH * BLOCK_SIZE
+        mid_x = board_pixel_w / 2.0
+
+        # 1. Whole-screen flash (just like bomb)
+        flash_alpha = min(0.38, 0.22 + lines * 0.05)
+        self.screen_flashes.append(ScreenFlash(color='#ffffff', initial_alpha=flash_alpha, duration=0.14))
+
+        # 2. Punchy screen shake
+        shake_mag = min(12.0, 4.0 + lines * 2.2)
+        self.trigger_shake(magnitude=shake_mag, duration=0.25)
+
+        # Fallback if row indices not passed
+        if not cleared_rows:
+            cleared_rows = [23 - i for i in range(lines)]
+
+        colors = ['#ffffff', '#00f0f0', '#7df9ff', '#38bdf8']
+
+        for row_y in cleared_rows:
+            cy = (row_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2.0)
+
+            # Central shockwave ring exploding from the middle
+            self.shockwaves.append(ShockwaveEffect(
+                mid_x, cy, max_radius=80, duration=0.36,
+                color_outer='#00f0f0', color_inner='#ffffff', ring_width=4.0
+            ))
+
+            # Horizontal line break exploding from middle to left and right
+            self.line_breaks.append(LineBreakExplosionEffect(
+                row_y, mid_x, cy, board_pixel_w, duration=0.38, color='#00f0f0'
+            ))
+
+            # Leftward exploding particles from middle
+            for _ in range(16):
+                spd = random.uniform(5.0, 11.0)
+                vx = -spd
+                vy = random.uniform(-2.5, 2.5)
+                c = random.choice(colors)
+                self.particles.append(Particle(
+                    mid_x, cy, c, vx=vx, vy=vy, style='spark',
+                    size=random.uniform(2.5, 4.5), life=0.55, decay=0.04
+                ))
+
+            # Rightward exploding particles from middle
+            for _ in range(16):
+                spd = random.uniform(5.0, 11.0)
+                vx = spd
+                vy = random.uniform(-2.5, 2.5)
+                c = random.choice(colors)
+                self.particles.append(Particle(
+                    mid_x, cy, c, vx=vx, vy=vy, style='spark',
+                    size=random.uniform(2.5, 4.5), life=0.55, decay=0.04
+                ))
+
+            # Ambient spark spray along row
+            for _ in range(12):
+                rx = random.uniform(0, board_pixel_w)
+                c = random.choice(colors)
+                self.particles.append(Particle(
+                    rx, cy, c, vx=random.uniform(-3, 3), vy=random.uniform(-4, 4),
+                    style='spark', size=random.uniform(2.0, 4.0), life=0.5, decay=0.035
+                ))
 
     # High-impact, pleasing power ability triggers
 
@@ -700,12 +856,16 @@ class CanvasRenderer:
             sf.update(delta_time)
         self.screen_flashes = [sf for sf in self.screen_flashes if sf.is_alive()]
 
+        for lb in self.line_breaks:
+            lb.update(delta_time)
+        self.line_breaks = [lb for lb in self.line_breaks if lb.is_alive()]
+
         if self.screen_shake_time > 0.0:
             self.screen_shake_time -= delta_time
             if self.screen_shake_time < 0.0:
                 self.screen_shake_time = 0.0
 
-    def render(self, ctx, game, sector_mgr=None, game_mode='CLASSIC'):
+    def render(self, ctx, game, sector_mgr=None, game_mode='CLASSIC', high_score=0):
         """
         Main drawing function called once per animation frame (60 FPS).
         """
@@ -794,7 +954,11 @@ class CanvasRenderer:
                     block_ability = ability if (i == ability_idx) else ABILITY_NONE
                     self.draw_neon_block(ctx, bx, by, game.current_piece.color, block_ability)
 
-        # 6. Draw Power Ability Visual Effects
+        # 6. Draw Visual Effects
+        # 6.0 Line break outward explosion effects
+        for lb in self.line_breaks:
+            lb.draw(ctx, offset_x, offset_y)
+
         # 6.1 Lightning cross lasers and electric arcs
         for l in self.lightning_effects:
             l.draw(ctx, offset_x, offset_y)
@@ -823,12 +987,12 @@ class CanvasRenderer:
         self.draw_hold_panel(ctx, game, offset_x - 150, offset_y)
         self.draw_next_panel(ctx, game, offset_x + board_pixel_w + 30, offset_y)
 
-        # 8. Draw HUD: Score, Level, Lines, Sector info
-        self.draw_hud(ctx, game, sector_mgr, game_mode, offset_x - 150, offset_y + 190)
+        # 8. Draw HUD: High Score, Score, Level, Lines, Sector info
+        self.draw_hud(ctx, game, sector_mgr, game_mode, offset_x - 150, offset_y + 175, high_score)
 
         # 9. Game Over or Pause Overlay
         if game.game_over:
-            self.draw_banner(ctx, "SYSTEM CORRUPTED", "PRESS R TO REBOOT", '#ff0055')
+            self.draw_banner(ctx, "SYSTEM CORRUPTED", f"SCORE: {game.score} // BEST: {high_score}", '#ff0055')
         elif game.is_paused:
             self.draw_banner(ctx, "SYSTEM PAUSED", "PRESS P TO RESUME", '#00f0f0')
 
@@ -1061,69 +1225,80 @@ class CanvasRenderer:
                 ctx.fillStyle = piece.color
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
 
-    def draw_hud(self, ctx, game, sector_mgr, game_mode, px, py):
-        """Draws Score, Level, Lines, Sector progress, and Active Relics."""
+    def draw_hud(self, ctx, game, sector_mgr, game_mode, px, py, high_score=0):
+        """Draws High Score, Score, Level, Lines, Sector progress, and Active Relics."""
         ctx.save()
         ctx.textAlign = 'left'
 
-        # Score
-        ctx.fillStyle = '#7a889b'
+        # High Score (Golden Cyberpunk glow)
+        ctx.fillStyle = '#94a3b8'
         ctx.font = '10px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText("SCORE", px, py)
+        ctx.fillText("HIGH SCORE", px, py)
+        ctx.fillStyle = '#ffb703'
+        ctx.shadowColor = '#ffb703'
+        ctx.shadowBlur = 8
+        ctx.font = 'bold 18px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillText(str(high_score), px, py + 22)
+        ctx.shadowBlur = 0
+
+        # Score
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = '10px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillText("SCORE", px, py + 52)
         ctx.fillStyle = '#ffffff'
         ctx.font = 'bold 18px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText(str(game.score), px, py + 24)
+        ctx.fillText(str(game.score), px, py + 74)
 
         # Level
-        ctx.fillStyle = '#7a889b'
+        ctx.fillStyle = '#94a3b8'
         ctx.font = '10px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText("LEVEL", px, py + 55)
+        ctx.fillText("LEVEL", px, py + 104)
         ctx.fillStyle = '#00ff66'
         ctx.font = 'bold 18px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText(str(game.level), px, py + 79)
+        ctx.fillText(str(game.level), px, py + 126)
 
         # Lines
-        ctx.fillStyle = '#7a889b'
+        ctx.fillStyle = '#94a3b8'
         ctx.font = '10px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText("LINES", px, py + 110)
+        ctx.fillText("LINES", px, py + 156)
         ctx.fillStyle = '#ffe600'
         ctx.font = 'bold 18px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText(str(game.lines_cleared), px, py + 134)
+        ctx.fillText(str(game.lines_cleared), px, py + 178)
 
         # Freeze Bar Indicator
         if game.freeze_timer > 0.0:
             ctx.fillStyle = '#87cefa'
             ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillText(f"🧊 FROZEN: {game.freeze_timer:.1f}s", px, py + 165)
+            ctx.fillText(f"🧊 FROZEN: {game.freeze_timer:.1f}s", px, py + 206)
 
         # Sector Info for Rogue Mode
         if game_mode == 'ROGUE' and sector_mgr:
             sec = sector_mgr.get_current_sector()
             ctx.fillStyle = '#ff0055'
             ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillText(f"SECTOR {sec['sector']}/5", px, py + 195)
+            ctx.fillText(f"SECTOR {sec['sector']}/5", px, py + 232)
             
             # Progress bar
             progress = min(1.0, sector_mgr.sector_lines_cleared / sec['lines_needed'])
             ctx.fillStyle = '#161d3f'
-            ctx.fillRect(px, py + 205, 120, 8)
+            ctx.fillRect(px, py + 242, 120, 8)
             ctx.fillStyle = '#ff0055'
-            ctx.fillRect(px, py + 205, int(120 * progress), 8)
+            ctx.fillRect(px, py + 242, int(120 * progress), 8)
 
             # Acquired Relics icons
             if len(sector_mgr.acquired_relics) > 0:
                 ctx.fillStyle = '#a0aec0'
                 ctx.font = '10px "Neuropol", "Orbitron", sans-serif'
-                ctx.fillText("RELICS:", px, py + 230)
+                ctx.fillText("RELICS:", px, py + 266)
                 relic_icons = " ".join([r['icon'] for r in sector_mgr.acquired_relics])
                 ctx.font = '16px sans-serif'
-                ctx.fillText(relic_icons, px, py + 250)
+                ctx.fillText(relic_icons, px, py + 286)
 
         # Combo announcement
         if game.combo > 0:
             ctx.fillStyle = '#ff00ff'
             ctx.font = 'bold 13px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillText(f"⚡ COMBO x{game.combo}!", px, py + 285)
+            ctx.fillText(f"⚡ COMBO x{game.combo}!", px, py + 316)
 
         ctx.restore()
 

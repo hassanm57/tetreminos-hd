@@ -43,9 +43,32 @@ class GameApp:
         # Mode Selection Modal state
         self.selected_modal_mode = self.game_mode
 
+        # High Score persistence system (browser localStorage)
+        self.high_score = self.load_high_score()
+        self.new_high_notified = False
+
         self.last_frame_time = time.time()
         self.canvas = None
         self.ctx = None
+
+    def load_high_score(self):
+        """Loads persistent High Score from browser localStorage (survives restarts/reloads)."""
+        try:
+            if HAS_BROWSER_ENV and hasattr(js, 'window') and hasattr(js.window, 'localStorage'):
+                val = js.window.localStorage.getItem("tetremino_high_score")
+                if val:
+                    return int(val)
+        except Exception:
+            pass
+        return 0
+
+    def save_high_score(self, score):
+        """Persists High Score to browser localStorage."""
+        try:
+            if HAS_BROWSER_ENV and hasattr(js, 'window') and hasattr(js.window, 'localStorage'):
+                js.window.localStorage.setItem("tetremino_high_score", str(int(score)))
+        except Exception:
+            pass
 
     def start(self):
         """Initializes canvas and attaches browser event listeners."""
@@ -542,6 +565,7 @@ class GameApp:
         self.hold_timer = 0.0
         self.repeat_timer = 0.0
         self.down_timer = 0.0
+        self.new_high_notified = False
         self.update_relic_modal_ui()
         self.update_mode_ui_elements()
 
@@ -588,12 +612,11 @@ class GameApp:
 
             elif etype == 'line_clear':
                 lines = ev.get('lines', 1)
+                cleared_rows = ev.get('cleared_rows', [])
                 self.audio.play_line_clear(lines)
-                self.renderer.trigger_shake(magnitude=lines * 3.0, duration=0.25)
                 
-                # Spawn spark particles
-                for row_idx in range(lines):
-                    self.renderer.spawn_clear_particles(23 - row_idx, color='#00f0f0', count=25)
+                # Explosive outward line break animation + flash (exploding outward from middle to left and right)
+                self.renderer.trigger_line_clear_effect(cleared_rows, lines)
 
                 # Juicy badge for Tetris (4-line clear)
                 if lines >= 4:
@@ -666,6 +689,15 @@ class GameApp:
             elif etype == 'game_over':
                 self.audio.play_game_over()
 
+        # Check and persist High Score
+        if self.game.score > self.high_score:
+            prev_high = self.high_score
+            self.high_score = self.game.score
+            self.save_high_score(self.high_score)
+            if prev_high > 0 and not getattr(self, 'new_high_notified', False):
+                self.new_high_notified = True
+                self.renderer.floating_badges.append(FloatingBadge("NEW RECORD!", f"{self.high_score} PTS", icon='🏆', color='#ffb703'))
+
     def update_relic_modal_ui(self):
         """Displays or hides the 3-relic draft screen in HTML."""
         modal = js.document.getElementById("relicModal")
@@ -732,7 +764,7 @@ class GameApp:
             self.process_events()
 
         self.renderer.update_particles(delta_time)
-        self.renderer.render(self.ctx, self.game, self.sector_mgr, self.game_mode)
+        self.renderer.render(self.ctx, self.game, self.sector_mgr, self.game_mode, self.high_score)
 
         # Request next frame
         loop_proxy = create_proxy(self.game_loop)

@@ -182,5 +182,47 @@ class TestTetrisEngine(unittest.TestCase):
         for piece in classic_game.bag:
             self.assertEqual(piece.ability, ABILITY_NONE)
 
+    def test_line_clear_explosion_effect(self):
+        """Verifies line clear explosion effect generates outward beams, flash, shockwave, and particles."""
+        from renderer import CanvasRenderer
+        renderer = CanvasRenderer()
+        renderer.trigger_line_clear_effect(cleared_rows=[22, 23], lines=2)
+
+        self.assertEqual(len(renderer.line_breaks), 2)
+        self.assertGreater(len(renderer.shockwaves), 0)
+        self.assertGreater(len(renderer.screen_flashes), 0)
+        self.assertGreater(len(renderer.particles), 0)
+        self.assertGreater(renderer.screen_shake_time, 0.0)
+
+        # Update animation and ensure particles and beams update
+        renderer.update_particles(0.05)
+        self.assertTrue(all(lb.is_alive() for lb in renderer.line_breaks))
+
+    def test_line_clear_event_contains_cleared_rows(self):
+        """Line clear pending event must contain exact cleared_rows list."""
+        bottom_row = TOTAL_HEIGHT - 1
+        for x in range(BOARD_WIDTH):
+            self.game.board[bottom_row][x] = {'color': '#00f0f0', 'ability': ABILITY_NONE}
+        self.game.clear_completed_lines()
+        self.game.update_score_and_level(1)
+
+        line_clear_events = [e for e in self.game.pending_events if e.get('type') == 'line_clear']
+        self.assertEqual(len(line_clear_events), 1)
+        self.assertIn('cleared_rows', line_clear_events[0])
+        self.assertEqual(line_clear_events[0]['cleared_rows'], [bottom_row])
+
+    def test_high_score_persistence_logic(self):
+        """GameApp should initialize high score and update when score exceeds best."""
+        from main import GameApp
+        app = GameApp()
+        self.assertGreaterEqual(app.high_score, 0)
+        initial_high = app.high_score
+
+        # Simulate higher score
+        test_score = initial_high + 5000
+        app.game.score = test_score
+        app.process_events()
+        self.assertEqual(app.high_score, test_score)
+
 if __name__ == '__main__':
     unittest.main()
