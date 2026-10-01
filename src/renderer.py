@@ -11,42 +11,479 @@ from config import (
 from srs_tables import TETROMINO_SHAPES
 
 class Particle:
-    """A single floating neon spark produced by line clears or bomb explosions."""
-    def __init__(self, x, y, color):
+    """
+    Versatile physics particle for sparks, flames, ice shards, electric arcs, and rock debris.
+    """
+    def __init__(self, x, y, color, vx=None, vy=None, style='spark', size=None, life=1.0, decay=None, gravity=0.15, drag=0.98):
         self.x = x
         self.y = y
         self.color = color
-        angle = random.uniform(0, math.pi * 2)
-        speed = random.uniform(2.0, 7.0)
-        self.vx = math.cos(angle) * speed
-        self.vy = math.sin(angle) * speed
-        self.life = 1.0  # Fades from 1.0 to 0.0
-        self.decay = random.uniform(0.02, 0.05)
-        self.size = random.uniform(2.0, 5.0)
+        self.style = style  # 'spark', 'flame', 'ice', 'electric', 'rock', 'smoke'
+        self.life = life
+        self.max_life = life
+        self.gravity = gravity
+        self.drag = drag
+        self.angle = random.uniform(0, math.pi * 2)
+        self.v_rot = random.uniform(-0.15, 0.15)
+        
+        if vx is not None and vy is not None:
+            self.vx = vx
+            self.vy = vy
+        else:
+            angle = random.uniform(0, math.pi * 2)
+            speed = random.uniform(2.0, 7.0)
+            self.vx = math.cos(angle) * speed
+            self.vy = math.sin(angle) * speed
+
+        self.size = size if size is not None else random.uniform(2.5, 5.0)
+        self.decay = decay if decay is not None else random.uniform(0.02, 0.05)
 
     def update(self):
         self.x += self.vx
         self.y += self.vy
-        self.vy += 0.15  # Subtle gravity
+        self.vx *= self.drag
+        self.vy *= self.drag
+        self.vy += self.gravity
+        self.angle += self.v_rot
         self.life -= self.decay
+        
+        if self.style == 'flame':
+            self.size += 0.14
+        elif self.style == 'smoke':
+            self.size += 0.22
 
     def is_alive(self):
         return self.life > 0.0
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+        
+        px = offset_x + self.x
+        py = offset_y + self.y
+        alpha = max(0.0, min(1.0, self.life / self.max_life))
+        
+        ctx.save()
+        ctx.globalAlpha = alpha
+
+        if self.style == 'spark':
+            ctx.fillStyle = self.color
+            ctx.shadowColor = self.color
+            ctx.shadowBlur = 8
+            ctx.beginPath()
+            ctx.arc(px, py, max(1.0, self.size * alpha), 0, math.pi * 2)
+            ctx.fill()
+
+        elif self.style == 'flame':
+            ctx.fillStyle = self.color
+            ctx.shadowColor = self.color
+            ctx.shadowBlur = 14
+            ctx.beginPath()
+            ctx.arc(px, py, self.size, 0, math.pi * 2)
+            ctx.fill()
+
+        elif self.style == 'ice':
+            ctx.translate(px, py)
+            ctx.rotate(self.angle)
+            ctx.fillStyle = self.color
+            ctx.shadowColor = '#38bdf8'
+            ctx.shadowBlur = 8
+            sz = self.size
+            ctx.beginPath()
+            ctx.moveTo(0, -sz)
+            ctx.lineTo(sz * 0.6, 0)
+            ctx.lineTo(0, sz)
+            ctx.lineTo(-sz * 0.6, 0)
+            ctx.closePath()
+            ctx.fill()
+
+        elif self.style == 'electric':
+            jx = px + random.uniform(-3, 3)
+            jy = py + random.uniform(-3, 3)
+            ctx.strokeStyle = self.color
+            ctx.shadowColor = self.color
+            ctx.shadowBlur = 10
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.moveTo(px, py)
+            ctx.lineTo(jx, jy)
+            ctx.stroke()
+
+        elif self.style == 'rock':
+            ctx.translate(px, py)
+            ctx.rotate(self.angle)
+            ctx.fillStyle = self.color
+            ctx.strokeStyle = '#475569'
+            ctx.lineWidth = 1
+            sz = self.size
+            ctx.fillRect(-sz / 2, -sz / 2, sz, sz)
+            ctx.strokeRect(-sz / 2, -sz / 2, sz, sz)
+
+        elif self.style == 'smoke':
+            ctx.fillStyle = 'rgba(75, 85, 99, 0.45)'
+            ctx.beginPath()
+            ctx.arc(px, py, self.size, 0, math.pi * 2)
+            ctx.fill()
+
+        ctx.restore()
+
+
+class ShockwaveEffect:
+    """Expanding energy wave / ripple ring with easing and radial glow."""
+    def __init__(self, x, y, max_radius=110, duration=0.45, color_outer='#ff3b00', color_inner='#ffe600', ring_width=4.5, rings_count=1):
+        self.x = x
+        self.y = y
+        self.max_radius = max_radius
+        self.duration = duration
+        self.elapsed = 0.0
+        self.color_outer = color_outer
+        self.color_inner = color_inner
+        self.ring_width = ring_width
+        self.rings_count = rings_count
+
+    def update(self, dt):
+        self.elapsed += dt
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+        
+        progress = min(1.0, self.elapsed / self.duration)
+        ease = 1.0 - math.pow(1.0 - progress, 3)
+        alpha = (1.0 - progress)
+        cx = offset_x + self.x
+        cy = offset_y + self.y
+
+        ctx.save()
+        
+        for i in range(self.rings_count):
+            r_delay = i * 0.14
+            ring_prog = max(0.0, min(1.0, (progress - r_delay) / (1.0 - r_delay))) if r_delay < 1.0 else 0.0
+            if ring_prog <= 0.0:
+                continue
+            r_ease = 1.0 - math.pow(1.0 - ring_prog, 3)
+            r = r_ease * self.max_radius
+            r_alpha = (1.0 - ring_prog) * alpha
+
+            ctx.strokeStyle = self.color_outer
+            ctx.shadowColor = self.color_outer
+            ctx.shadowBlur = int(14 * r_alpha)
+            ctx.lineWidth = max(1.0, self.ring_width * (1.0 - ring_prog * 0.6))
+            ctx.globalAlpha = r_alpha
+            ctx.beginPath()
+            ctx.arc(cx, cy, r, 0, math.pi * 2)
+            ctx.stroke()
+
+        r_main = ease * self.max_radius * 0.65
+        if r_main > 0:
+            ctx.globalAlpha = alpha * 0.45
+            grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r_main)
+            grad.addColorStop(0.0, self.color_inner)
+            grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)')
+            ctx.fillStyle = grad
+            ctx.beginPath()
+            ctx.arc(cx, cy, r_main, 0, math.pi * 2)
+            ctx.fill()
+
+        ctx.restore()
+
+
+class LightningCrossEffect:
+    """Blinding cross laser and animated high-voltage electric arcs."""
+    def __init__(self, bolt_x, bolt_y, duration=0.42):
+        self.bolt_x = bolt_x
+        self.bolt_y = bolt_y
+        self.duration = duration
+        self.elapsed = 0.0
+        self.jitter_offsets = [random.uniform(-7, 7) for _ in range(30)]
+
+    def update(self, dt):
+        self.elapsed += dt
+        if random.random() < 0.4:
+            self.jitter_offsets = [random.uniform(-7, 7) for _ in range(30)]
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+        
+        progress = min(1.0, self.elapsed / self.duration)
+        alpha = math.sin(progress * math.pi)
+        
+        board_w = BOARD_WIDTH * BLOCK_SIZE
+        board_h = BOARD_HEIGHT * BLOCK_SIZE
+        
+        cx = offset_x + self.bolt_x * BLOCK_SIZE + BLOCK_SIZE / 2
+        cy = offset_y + (self.bolt_y - HIDDEN_ROWS) * BLOCK_SIZE + BLOCK_SIZE / 2
+
+        ctx.save()
+
+        # Broad electric ambient glow
+        ctx.globalAlpha = alpha * 0.5
+        ctx.strokeStyle = '#00f0f0'
+        ctx.shadowColor = '#00f0f0'
+        ctx.shadowBlur = 24
+        ctx.lineWidth = max(2.0, 28 * (1.0 - progress))
+        ctx.beginPath()
+        ctx.moveTo(offset_x, cy)
+        ctx.lineTo(offset_x + board_w, cy)
+        ctx.moveTo(cx, offset_y)
+        ctx.lineTo(cx, offset_y + board_h)
+        ctx.stroke()
+
+        # Vivid neon beam
+        ctx.globalAlpha = alpha * 0.85
+        ctx.strokeStyle = '#38bdf8'
+        ctx.shadowBlur = 12
+        ctx.lineWidth = max(1.5, 11 * (1.0 - progress))
+        ctx.beginPath()
+        ctx.moveTo(offset_x, cy)
+        ctx.lineTo(offset_x + board_w, cy)
+        ctx.moveTo(cx, offset_y)
+        ctx.lineTo(cx, offset_y + board_h)
+        ctx.stroke()
+
+        # Blinding white laser core
+        ctx.globalAlpha = alpha
+        ctx.strokeStyle = '#ffffff'
+        ctx.shadowColor = '#ffffff'
+        ctx.shadowBlur = 8
+        ctx.lineWidth = max(1.0, 3.5 * (1.0 - progress))
+        ctx.beginPath()
+        ctx.moveTo(offset_x, cy)
+        ctx.lineTo(offset_x + board_w, cy)
+        ctx.moveTo(cx, offset_y)
+        ctx.lineTo(cx, offset_y + board_h)
+        ctx.stroke()
+
+        # Crackling electric zigzag arcs branching along row and column
+        ctx.lineWidth = 1.8
+        ctx.strokeStyle = '#a5f3fc'
+        ctx.beginPath()
+        for i in range(10):
+            seg_x = offset_x + i * (board_w / 10.0)
+            jit = self.jitter_offsets[i]
+            if i == 0:
+                ctx.moveTo(seg_x, cy + jit)
+            else:
+                ctx.lineTo(seg_x, cy + jit)
+        ctx.stroke()
+
+        ctx.beginPath()
+        for j in range(12):
+            seg_y = offset_y + j * (board_h / 12.0)
+            jit = self.jitter_offsets[10 + j]
+            if j == 0:
+                ctx.moveTo(cx + jit, seg_y)
+            else:
+                ctx.lineTo(cx + jit, seg_y)
+        ctx.stroke()
+
+        # Intersection star flare
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = '#00f0f0'
+        ctx.shadowBlur = 20
+        flare_sz = max(4.0, 24 * (1.0 - progress))
+        ctx.beginPath()
+        ctx.arc(cx, cy, flare_sz, 0, math.pi * 2)
+        ctx.fill()
+
+        ctx.restore()
+
+
+class FireEruptionEffect:
+    """Thermite cross explosion blooming over center and orthogonal neighbor cells."""
+    def __init__(self, center_x, center_y, duration=0.5):
+        self.center_x = center_x
+        self.center_y = center_y
+        self.duration = duration
+        self.elapsed = 0.0
+
+    def update(self, dt):
+        self.elapsed += dt
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+        
+        progress = min(1.0, self.elapsed / self.duration)
+        alpha = 1.0 - progress
+        ease = 1.0 - math.pow(1.0 - progress, 2)
+        
+        cx = offset_x + self.center_x * BLOCK_SIZE + BLOCK_SIZE / 2
+        cy = offset_y + (self.center_y - HIDDEN_ROWS) * BLOCK_SIZE + BLOCK_SIZE / 2
+
+        ctx.save()
+
+        offsets = [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]
+        for dx, dy in offsets:
+            fx = cx + dx * BLOCK_SIZE * ease * 1.15
+            fy = cy + dy * BLOCK_SIZE * ease * 1.15
+            r = (BLOCK_SIZE * 0.85) * (1.0 - progress * 0.35)
+
+            ctx.globalAlpha = alpha * 0.75
+            ctx.fillStyle = '#ff4500'
+            ctx.shadowColor = '#ff4500'
+            ctx.shadowBlur = 18
+            ctx.beginPath()
+            ctx.arc(fx, fy, r, 0, math.pi * 2)
+            ctx.fill()
+
+            ctx.globalAlpha = alpha * 0.95
+            ctx.fillStyle = '#ffeb3b'
+            ctx.shadowColor = '#ffeb3b'
+            ctx.shadowBlur = 8
+            ctx.beginPath()
+            ctx.arc(fx, fy, r * 0.5, 0, math.pi * 2)
+            ctx.fill()
+
+        ctx.restore()
+
+
+class FloatingBadge:
+    """
+    Sleek glowing cyberpunk badge announcing ability activation and impacts.
+    Floats upward with bouncy pop-in and glowing capsule border.
+    """
+    def __init__(self, text, subtitle='', icon='⚡', x=150, y=300, color='#00f0f0', duration=1.25):
+        self.text = text
+        self.subtitle = subtitle
+        self.icon = icon
+        self.x = x
+        self.y = y
+        self.color = color
+        self.duration = duration
+        self.elapsed = 0.0
+
+    def update(self, dt):
+        self.elapsed += dt
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y):
+        if not self.is_alive():
+            return
+        
+        progress = min(1.0, self.elapsed / self.duration)
+        
+        if progress < 0.15:
+            scale = (progress / 0.15) * 1.18
+        elif progress < 0.25:
+            scale = 1.18 - ((progress - 0.15) / 0.10) * 0.18
+        else:
+            scale = 1.0
+
+        y_float = -progress * 42.0
+
+        if progress < 0.65:
+            alpha = 1.0
+        else:
+            alpha = 1.0 - ((progress - 0.65) / 0.35)
+
+        bx = offset_x + self.x
+        by = offset_y + self.y + y_float
+
+        pill_w = 175.0
+        pill_h = 34.0 if self.subtitle else 26.0
+
+        ctx.save()
+        ctx.translate(bx, by)
+        ctx.scale(scale, scale)
+        ctx.globalAlpha = alpha
+
+        # Dark glowing capsule background
+        ctx.fillStyle = 'rgba(4, 7, 18, 0.94)'
+        ctx.shadowColor = self.color
+        ctx.shadowBlur = int(14 * alpha)
+        ctx.strokeStyle = self.color
+        ctx.lineWidth = 1.8
+
+        hw = pill_w / 2.0
+        hh = pill_h / 2.0
+        r = hh
+        ctx.beginPath()
+        ctx.moveTo(-hw + r, -hh)
+        ctx.lineTo(hw - r, -hh)
+        ctx.arc(hw - r, 0, r, -math.pi / 2, math.pi / 2)
+        ctx.lineTo(-hw + r, hh)
+        ctx.arc(-hw + r, 0, r, math.pi / 2, -math.pi / 2)
+        ctx.closePath()
+        ctx.fill()
+        ctx.stroke()
+
+        # Text typography
+        ctx.shadowBlur = 6
+        ctx.shadowColor = self.color
+        ctx.fillStyle = '#ffffff'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+
+        if self.subtitle:
+            ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillText(f"{self.icon} {self.text}", 0, -5)
+            ctx.font = 'bold 9px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillStyle = self.color
+            ctx.fillText(self.subtitle, 0, 8)
+        else:
+            ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillText(f"{self.icon} {self.text}", 0, 1)
+
+        ctx.restore()
+
+
+class ScreenFlash:
+    """Brief whole-matrix flash for high-impact detonations."""
+    def __init__(self, color='#ffffff', initial_alpha=0.35, duration=0.12):
+        self.color = color
+        self.initial_alpha = initial_alpha
+        self.duration = duration
+        self.elapsed = 0.0
+
+    def update(self, dt):
+        self.elapsed += dt
+
+    def is_alive(self):
+        return self.elapsed < self.duration
+
+    def draw(self, ctx, offset_x, offset_y, w, h):
+        if not self.is_alive():
+            return
+        progress = min(1.0, self.elapsed / self.duration)
+        alpha = self.initial_alpha * (1.0 - progress)
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = self.color
+        ctx.fillRect(offset_x, offset_y, w, h)
+        ctx.restore()
 
 
 class CanvasRenderer:
     """
     Renders the game onto an HTML5 2D Canvas context.
-    Features vibrant cyberpunk neon glow, ghost piece, particle bursts,
-    ability icons, HUD, and screen shake.
+    Features vibrant cyberpunk neon glow, ghost piece, high-impact power animations,
+    particle bursts, ability icons, HUD, and screen shake.
     """
     def __init__(self):
         self.particles = []
+        self.shockwaves = []
+        self.lightning_effects = []
+        self.fire_eruptions = []
+        self.floating_badges = []
+        self.screen_flashes = []
         self.screen_shake_time = 0.0
         self.shake_magnitude = 0.0
 
     def trigger_shake(self, magnitude=6.0, duration=0.25):
-        """Applies screen shake for hard drops and explosions."""
+        """Applies screen shake for hard drops, powers, and explosions."""
         self.shake_magnitude = magnitude
         self.screen_shake_time = duration
 
@@ -55,20 +492,213 @@ class CanvasRenderer:
         canvas_y = (y_row - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
         for _ in range(count):
             canvas_x = random.uniform(0, BOARD_WIDTH * BLOCK_SIZE)
-            self.particles.append(Particle(canvas_x, canvas_y, color))
+            self.particles.append(Particle(canvas_x, canvas_y, color, style='spark', size=random.uniform(2.0, 4.5)))
 
     def spawn_explosion_particles(self, center_x, center_y, color='#ff4500', count=40):
         """Spawns an explosive circular blast of sparks for bomb blocks."""
         cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
         cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
         for _ in range(count):
-            self.particles.append(Particle(cx, cy, color))
+            self.particles.append(Particle(cx, cy, color, style='spark', size=random.uniform(2.5, 5.0)))
+
+    # High-impact, pleasing power ability triggers
+
+    def trigger_bomb_effect(self, center_x, center_y, cleared_count=9):
+        """💣 Bomb Mino: Fiery expanding fireball blast, shockwave ring, embers & smoke."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=14.0, duration=0.45)
+        self.screen_flashes.append(ScreenFlash(color='#ff4500', initial_alpha=0.35, duration=0.14))
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=140, duration=0.5, color_outer='#ff3700', color_inner='#ffe600', ring_width=5.5))
+        
+        # 1. Blooming flame particles
+        flame_colors = ['#ffffff', '#ffeb3b', '#ff9800', '#ff5722', '#f44336']
+        for _ in range(35):
+            spd = random.uniform(1.5, 4.5)
+            ang = random.uniform(0, math.pi * 2)
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd - 0.5
+            col = random.choice(flame_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='flame', size=random.uniform(5.0, 9.0), life=0.65, decay=0.035, gravity=-0.08))
+
+        # 2. Fast fiery sparks
+        spark_colors = ['#ffffff', '#ffeb3b', '#ff7043']
+        for _ in range(40):
+            spd = random.uniform(4.0, 9.0)
+            ang = random.uniform(0, math.pi * 2)
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd
+            col = random.choice(spark_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='spark', size=random.uniform(2.5, 4.5), life=0.8, decay=0.03, gravity=0.18))
+
+        # 3. Drifting smoke puffs
+        for _ in range(16):
+            spd = random.uniform(0.6, 2.0)
+            ang = random.uniform(0, math.pi * 2)
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd - 1.2
+            self.particles.append(Particle(cx, cy, '#4b5563', vx=vx, vy=vy, style='smoke', size=random.uniform(8.0, 14.0), life=0.9, decay=0.025, gravity=-0.05))
+
+        # 4. Floating badge announcement
+        sub = f"-{cleared_count} BLOCKS" if cleared_count else "3x3 CLEAR"
+        self.floating_badges.append(FloatingBadge("DETONATION!", sub, icon='💣', x=cx, y=cy - 12, color='#ff4500'))
+
+    def trigger_lightning_effect(self, bolt_x, bolt_y, cleared_count=19):
+        """⚡ Lightning Mino: Dual cross laser, branching electric arcs, cyan sparks."""
+        cx = bolt_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (bolt_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=9.0, duration=0.35)
+        self.screen_flashes.append(ScreenFlash(color='#00f0f0', initial_alpha=0.32, duration=0.12))
+        self.lightning_effects.append(LightningCrossEffect(bolt_x, bolt_y, duration=0.42))
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=85, duration=0.35, color_outer='#00f0f0', color_inner='#ffffff', ring_width=3.5))
+
+        # Electric sparks sprayed along the cleared row & column
+        elec_colors = ['#00f0f0', '#7df9ff', '#ffffff', '#38bdf8']
+        for _ in range(30):
+            # Spray along horizontal row
+            rx = random.uniform(0, BOARD_WIDTH * BLOCK_SIZE)
+            col = random.choice(elec_colors)
+            self.particles.append(Particle(rx, cy, col, vx=random.uniform(-3, 3), vy=random.uniform(-4, 4), style='electric', size=random.uniform(2, 4), life=0.5, decay=0.04))
+        for _ in range(25):
+            # Spray along vertical col
+            ry = random.uniform(0, BOARD_HEIGHT * BLOCK_SIZE)
+            col = random.choice(elec_colors)
+            self.particles.append(Particle(cx, ry, col, vx=random.uniform(-4, 4), vy=random.uniform(-3, 3), style='electric', size=random.uniform(2, 4), life=0.5, decay=0.04))
+
+        sub = f"-{cleared_count} BLOCKS" if cleared_count else "ROW+COL CLEAR"
+        self.floating_badges.append(FloatingBadge("IONIC CROSS!", sub, icon='⚡', x=cx, y=cy - 12, color='#00f0f0'))
+
+    def trigger_magnet_effect(self, center_x, center_y, moved_count=0):
+        """🧲 Magnet Mino: Concentric gravitational flux rings and suction particles."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=5.0, duration=0.25)
+        # 3 concentric magnetic flux rings
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=115, duration=0.6, color_outer='#d946ef', color_inner='#a855f7', ring_width=3.5, rings_count=3))
+        
+        # Suction particles drawn toward magnet
+        mag_colors = ['#d946ef', '#c084fc', '#38bdf8', '#ffffff']
+        for _ in range(35):
+            ang = random.uniform(0, math.pi * 2)
+            dist = random.uniform(40, 110)
+            sx = cx + math.cos(ang) * dist
+            sy = cy + math.sin(ang) * dist
+            spd = random.uniform(3.0, 6.0)
+            vx = -math.cos(ang) * spd
+            vy = -math.sin(ang) * spd
+            col = random.choice(mag_colors)
+            self.particles.append(Particle(sx, sy, col, vx=vx, vy=vy, style='spark', size=random.uniform(2.0, 4.0), life=0.45, decay=0.035, drag=1.02))
+
+        sub = f"+{moved_count} CONDENSED" if moved_count > 0 else "GAPS CLOSED"
+        self.floating_badges.append(FloatingBadge("GRAVITY PULL!", sub, icon='🧲', x=cx, y=cy - 12, color='#d946ef'))
+
+    def trigger_freeze_effect(self, center_x, center_y, duration=8.0):
+        """🧊 Freeze Mino: Crystalline ice nova shockwave and spinning diamond crystals."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=4.0, duration=0.2)
+        self.screen_flashes.append(ScreenFlash(color='#38bdf8', initial_alpha=0.3, duration=0.15))
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=150, duration=0.55, color_outer='#38bdf8', color_inner='#e0f2fe', ring_width=4.0))
+
+        # Diamond ice shards radiating outwards
+        ice_colors = ['#ffffff', '#e0f2fe', '#a5f3fc', '#38bdf8']
+        for _ in range(40):
+            ang = random.uniform(0, math.pi * 2)
+            spd = random.uniform(3.0, 8.0)
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd
+            col = random.choice(ice_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='ice', size=random.uniform(3.5, 7.0), life=0.75, decay=0.025, drag=0.96))
+
+        self.floating_badges.append(FloatingBadge("TIME STASIS!", f"{duration:.1f}s FROZEN", icon='🧊', x=cx, y=cy - 12, color='#38bdf8'))
+
+    def trigger_burning_placed_effect(self, center_x, center_y):
+        """🔥 Burning Mino (Placed): Thermite fuse armed, rising sizzling fire & spark aura."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=50, duration=0.3, color_outer='#ff5500', color_inner='#ffcc00', ring_width=3.0))
+        
+        # Rising flame sparks
+        flame_colors = ['#ffeb3b', '#ff7043', '#f44336']
+        for _ in range(25):
+            vx = random.uniform(-2.0, 2.0)
+            vy = random.uniform(-4.5, -1.2)
+            col = random.choice(flame_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='flame', size=random.uniform(4.0, 7.0), life=0.6, decay=0.035, gravity=-0.1))
+
+        self.floating_badges.append(FloatingBadge("FUSE ARMED!", "3.0s COUNTDOWN", icon='🔥', x=cx, y=cy - 12, color='#ff5500'))
+
+    def trigger_burning_exploded_effect(self, center_x, center_y, cleared_count=5):
+        """🔥 Burning Mino (Detonated): Cross-flame thermite eruption & flying embers."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=11.0, duration=0.4)
+        self.screen_flashes.append(ScreenFlash(color='#ff3700', initial_alpha=0.35, duration=0.12))
+        self.fire_eruptions.append(FireEruptionEffect(center_x, center_y, duration=0.5))
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=105, duration=0.45, color_outer='#ff2200', color_inner='#ffe600', ring_width=4.5))
+
+        # Flame & ember particles
+        flame_colors = ['#ffeb3b', '#ff9800', '#ff5722', '#f44336']
+        for _ in range(45):
+            ang = random.uniform(0, math.pi * 2)
+            spd = random.uniform(2.5, 6.5)
+            vx = math.cos(ang) * spd
+            vy = math.sin(ang) * spd - 0.5
+            col = random.choice(flame_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='flame', size=random.uniform(5.0, 8.5), life=0.7, decay=0.03, gravity=-0.05))
+
+        sub = f"-{cleared_count} BLOCKS" if cleared_count else "THERMITE CROSS"
+        self.floating_badges.append(FloatingBadge("THERMITE BURST!", sub, icon='🔥', x=cx, y=cy - 12, color='#ff3300'))
+
+    def trigger_heavy_landed_effect(self, center_x, center_y):
+        """🪨 Heavy Mino: Seismic ground slam, dust & obsidian debris blast."""
+        cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
+        
+        self.trigger_shake(magnitude=13.0, duration=0.32)
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=90, duration=0.38, color_outer='#f59e0b', color_inner='#d97706', ring_width=5.0))
+
+        # Heavy obsidian rock debris kicking up
+        rock_colors = ['#64748b', '#475569', '#334155', '#f59e0b']
+        for _ in range(35):
+            vx = random.uniform(-5.0, 5.0)
+            vy = random.uniform(-6.5, -2.0)
+            col = random.choice(rock_colors)
+            self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='rock', size=random.uniform(4.0, 7.5), life=0.8, decay=0.03, gravity=0.38))
+
+        self.floating_badges.append(FloatingBadge("SEISMIC SLAM!", "DENSE OBSIDIAN", icon='🪨', x=cx, y=cy - 12, color='#f59e0b'))
 
     def update_particles(self, delta_time):
-        """Updates physics for all active particles and screen shake."""
+        """Updates physics and timers for all active particles and visual effects."""
         for p in self.particles:
             p.update()
         self.particles = [p for p in self.particles if p.is_alive()]
+
+        for s in self.shockwaves:
+            s.update(delta_time)
+        self.shockwaves = [s for s in self.shockwaves if s.is_alive()]
+
+        for l in self.lightning_effects:
+            l.update(delta_time)
+        self.lightning_effects = [l for l in self.lightning_effects if l.is_alive()]
+
+        for f in self.fire_eruptions:
+            f.update(delta_time)
+        self.fire_eruptions = [f for f in self.fire_eruptions if f.is_alive()]
+
+        for b in self.floating_badges:
+            b.update(delta_time)
+        self.floating_badges = [b for b in self.floating_badges if b.is_alive()]
+
+        for sf in self.screen_flashes:
+            sf.update(delta_time)
+        self.screen_flashes = [sf for sf in self.screen_flashes if sf.is_alive()]
 
         if self.screen_shake_time > 0.0:
             self.screen_shake_time -= delta_time
@@ -99,6 +729,10 @@ class CanvasRenderer:
         # 2. Draw Main Matrix Background & Grid Lines
         ctx.fillStyle = '#050505'
         ctx.fillRect(offset_x, offset_y, board_pixel_w, board_pixel_h)
+
+        # 2.1 Draw Screen Flashes for high-impact detonations
+        for sf in self.screen_flashes:
+            sf.draw(ctx, offset_x, offset_y, board_pixel_w, board_pixel_h)
 
         # Subtle dark grid lines
         ctx.strokeStyle = '#141414'
@@ -160,17 +794,30 @@ class CanvasRenderer:
                     block_ability = ability if (i == ability_idx) else ABILITY_NONE
                     self.draw_neon_block(ctx, bx, by, game.current_piece.color, block_ability)
 
-        # 6. Draw Line-Clear / Bomb Explosion Particles
+        # 6. Draw Power Ability Visual Effects
+        # 6.1 Lightning cross lasers and electric arcs
+        for l in self.lightning_effects:
+            l.draw(ctx, offset_x, offset_y)
+
+        # 6.2 Thermite fire explosions
+        for f in self.fire_eruptions:
+            f.draw(ctx, offset_x, offset_y)
+
+        # 6.3 Expanding shockwaves & magnetic pulse rings
+        for s in self.shockwaves:
+            s.draw(ctx, offset_x, offset_y)
+
+        # 6.4 Enhanced physics particles (sparks, flames, ice crystals, electric arcs, rock debris)
         for p in self.particles:
-            ctx.save()
-            ctx.globalAlpha = max(0.0, p.life)
-            ctx.fillStyle = p.color
-            ctx.shadowColor = p.color
-            ctx.shadowBlur = 8
-            ctx.beginPath()
-            ctx.arc(offset_x + p.x, offset_y + p.y, p.size, 0, math.pi * 2)
-            ctx.fill()
-            ctx.restore()
+            p.draw(ctx, offset_x, offset_y)
+
+        # 6.5 Frost ambient aura while game is frozen
+        if game.freeze_timer > 0.0:
+            self.draw_freeze_ambient(ctx, offset_x, offset_y, board_pixel_w, board_pixel_h, game.freeze_timer)
+
+        # 6.6 Floating combat badges (announcements floating above blocks with glowing capsule pills)
+        for b in self.floating_badges:
+            b.draw(ctx, offset_x, offset_y)
 
         # 7. Draw UI Panels: Hold Queue (Left) & Next Queue (Right)
         self.draw_hold_panel(ctx, game, offset_x - 150, offset_y)
@@ -216,6 +863,32 @@ class CanvasRenderer:
         symbol = info['symbol']
         name = info['name'].upper()
         ctx.fillText(f"⚡ INCOMING: [{symbol} {name}] ⚡", bx + (bw / 2), by + 19)
+        ctx.restore()
+
+    def draw_freeze_ambient(self, ctx, ox, oy, bw, bh, freeze_timer):
+        """Draws an ambient pulsating frost vignette around the matrix during stasis."""
+        pulse = (math.sin(time.time() * 5.0) + 1.0) / 2.0
+        ctx.save()
+        # Icy outer border halo
+        ctx.strokeStyle = '#38bdf8'
+        ctx.shadowColor = '#38bdf8'
+        ctx.shadowBlur = int(12 + 10 * pulse)
+        ctx.lineWidth = 2.5
+        ctx.strokeRect(ox, oy, bw, bh)
+
+        # Top and bottom subtle frost mist
+        ctx.globalAlpha = 0.15 + 0.1 * pulse
+        grad_top = ctx.createLinearGradient(ox, oy, ox, oy + 45)
+        grad_top.addColorStop(0.0, '#38bdf8')
+        grad_top.addColorStop(1.0, 'rgba(0,0,0,0)')
+        ctx.fillStyle = grad_top
+        ctx.fillRect(ox, oy, bw, 45)
+
+        grad_bot = ctx.createLinearGradient(ox, oy + bh, ox, oy + bh - 45)
+        grad_bot.addColorStop(0.0, '#38bdf8')
+        grad_bot.addColorStop(1.0, 'rgba(0,0,0,0)')
+        ctx.fillStyle = grad_bot
+        ctx.fillRect(ox, oy + bh - 45, bw, 45)
         ctx.restore()
 
     def draw_neon_block(self, ctx, x, y, color, ability=ABILITY_NONE, burn_timer=None):

@@ -145,23 +145,126 @@ class SynthwaveAudio:
     def play_ability_sfx(self, ability_type):
         """Plays custom procedural synth sounds for each tactical ability block."""
         if ability_type == ABILITY_BOMB:
-            # Deep rumbling explosion (sweeps down to 25 Hz)
-            self.play_tone(90.0, 0.45, wave_type='triangle', gain_level=0.25)
+            self.play_bomb_sfx()
         elif ability_type == ABILITY_LIGHTNING:
-            # Electric high-voltage zap
-            self.play_tone(1100.0, 0.2, wave_type='sawtooth', gain_level=0.1)
+            self.play_lightning_sfx()
         elif ability_type == ABILITY_MAGNET:
-            # Smooth magnetic sweep upward
-            self.play_tone(329.63, 0.3, wave_type='sine', gain_level=0.08)
+            self.play_magnet_sfx()
         elif ability_type == ABILITY_FREEZE:
-            # Crystalline chime chord
-            self.play_chord([587.33, 880.0, 1174.66], 0.5, wave_type='sine', gain_per_note=0.05)
+            self.play_freeze_sfx()
         elif ability_type == ABILITY_BURNING:
-            # Crackling warning tick
-            self.play_tone(350.0, 0.08, wave_type='square', gain_level=0.05)
+            self.play_burning_ignite_sfx()
         elif ability_type == ABILITY_HEAVY:
-            # Heavy metallic thud
-            self.play_tone(110.0, 0.18, wave_type='square', gain_level=0.12)
+            self.play_heavy_sfx()
+
+    def play_bomb_sfx(self):
+        """Deep explosive rumble with sharp initial blast transient."""
+        if not HAS_JS or self.is_muted or self.audio_ctx is None:
+            return
+        self.resume_if_needed()
+        try:
+            curr = self.audio_ctx.currentTime
+            # 1. High transient crack
+            self.play_tone(180.0, 0.08, wave_type='triangle', gain_level=0.18)
+            # 2. Sub-bass downward sweep
+            osc = self.audio_ctx.createOscillator()
+            gain = self.audio_ctx.createGain()
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(120.0, curr)
+            osc.frequency.exponentialRampToValueAtTime(26.0, curr + 0.45)
+            gain.gain.setValueAtTime(0.3, curr)
+            gain.gain.exponentialRampToValueAtTime(0.0001, curr + 0.45)
+            osc.connect(gain)
+            gain.connect(self.audio_ctx.destination)
+            osc.start(curr)
+            osc.stop(curr + 0.45)
+        except Exception:
+            pass
+
+    def play_lightning_sfx(self):
+        """Electric high-voltage ionization blast with dual-saw zap."""
+        if not HAS_JS or self.is_muted or self.audio_ctx is None:
+            return
+        self.resume_if_needed()
+        try:
+            curr = self.audio_ctx.currentTime
+            osc = self.audio_ctx.createOscillator()
+            gain = self.audio_ctx.createGain()
+            osc.type = 'sawtooth'
+            osc.frequency.setValueAtTime(1400.0, curr)
+            osc.frequency.exponentialRampToValueAtTime(180.0, curr + 0.28)
+            gain.gain.setValueAtTime(0.18, curr)
+            gain.gain.exponentialRampToValueAtTime(0.0001, curr + 0.28)
+            osc.connect(gain)
+            gain.connect(self.audio_ctx.destination)
+            osc.start(curr)
+            osc.stop(curr + 0.28)
+            # Crackle overtone
+            self.play_tone(880.0, 0.15, wave_type='square', gain_level=0.08)
+        except Exception:
+            pass
+
+    def play_magnet_sfx(self):
+        """Futuristic gravity flux warp with pitch sweep upward."""
+        if not HAS_JS or self.is_muted or self.audio_ctx is None:
+            return
+        self.resume_if_needed()
+        try:
+            curr = self.audio_ctx.currentTime
+            osc = self.audio_ctx.createOscillator()
+            gain = self.audio_ctx.createGain()
+            osc.type = 'triangle'
+            osc.frequency.setValueAtTime(220.0, curr)
+            osc.frequency.exponentialRampToValueAtTime(659.25, curr + 0.35)
+            gain.gain.setValueAtTime(0.15, curr)
+            gain.gain.exponentialRampToValueAtTime(0.0001, curr + 0.35)
+            osc.connect(gain)
+            gain.connect(self.audio_ctx.destination)
+            osc.start(curr)
+            osc.stop(curr + 0.35)
+        except Exception:
+            pass
+
+    def play_freeze_sfx(self):
+        """Glistening crystalline stasis chime chord."""
+        # Arpeggiated crystal harmonic tones
+        chimes = [659.25, 987.77, 1318.51, 1975.53]
+        for i, freq in enumerate(chimes):
+            self.play_tone(freq, 0.4 + i * 0.08, wave_type='sine', gain_level=0.06)
+
+    def play_burning_ignite_sfx(self):
+        """Sizzling thermite fuse ignition sound."""
+        self.play_tone(520.0, 0.07, wave_type='square', gain_level=0.07)
+        self.play_tone(840.0, 0.09, wave_type='sawtooth', gain_level=0.06)
+
+    def play_burning_detonate_sfx(self):
+        """Thermite burst detonation."""
+        self.play_bomb_sfx()
+        self.play_tone(440.0, 0.2, wave_type='sawtooth', gain_level=0.1)
+
+    def play_heavy_sfx(self):
+        """Massive seismic ground slam with deep industrial sub-bass impact."""
+        if not HAS_JS or self.is_muted or self.audio_ctx is None:
+            return
+        self.resume_if_needed()
+        try:
+            curr = self.audio_ctx.currentTime
+            # Heavy anvil thud
+            self.play_tone(95.0, 0.22, wave_type='square', gain_level=0.18)
+            # Seismic sub rumble
+            osc = self.audio_ctx.createOscillator()
+            gain = self.audio_ctx.createGain()
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(90.0, curr)
+            osc.frequency.exponentialRampToValueAtTime(30.0, curr + 0.32)
+            gain.gain.setValueAtTime(0.28, curr)
+            gain.gain.exponentialRampToValueAtTime(0.0001, curr + 0.32)
+            osc.connect(gain)
+            gain.connect(self.audio_ctx.destination)
+            osc.start(curr)
+            osc.stop(curr + 0.32)
+        except Exception:
+            pass
 
     def play_power_alert(self):
         """Rising futuristic chime when a Power Piece appears."""

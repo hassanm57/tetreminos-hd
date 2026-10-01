@@ -119,9 +119,9 @@ def update_burning_blocks(board, delta_time):
     """
     🔥 Burning block: Ticks down the 3-second fuse.
     When fuse reaches zero, it burns itself and adjacent 4 neighbor blocks.
-    Returns list of cells destroyed by explosions this tick.
+    Returns list of detonation dictionaries: [{'x': bx, 'y': by, 'cleared': [(nx, ny, cell), ...]}]
     """
-    detonated_cells = []
+    detonations = []
     blocks_to_explode = []
     
     # First pass: find all burning blocks and decrement their timers
@@ -136,6 +136,7 @@ def update_burning_blocks(board, delta_time):
                     
     # Second pass: explode finished burning blocks
     for bx, by in blocks_to_explode:
+        cells_this_bomb = []
         # Neighbor offsets: center, up, down, left, right
         offsets = [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]
         for dx, dy in offsets:
@@ -143,7 +144,12 @@ def update_burning_blocks(board, delta_time):
             ny = by + dy
             if 0 <= nx < BOARD_WIDTH and 0 <= ny < TOTAL_HEIGHT:
                 if board[ny][nx] is not None:
-                    detonated_cells.append((nx, ny, board[ny][nx]))
+                    cells_this_bomb.append((nx, ny, board[ny][nx]))
                     board[ny][nx] = None
+        detonations.append({
+            'x': bx,
+            'y': by,
+            'cleared': cells_this_bomb
+        })
                     
-    return detonated_cells
+    return detonations

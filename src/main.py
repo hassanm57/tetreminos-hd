@@ -5,11 +5,12 @@ import time
 import math
 from config import (
     ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE,
+    ABILITY_BURNING, ABILITY_HEAVY,
     DAS_DELAY, ARR_RATE, SOFT_DROP_SPEED
 )
 from engine import TetrisGame
 from audio import SynthwaveAudio
-from renderer import CanvasRenderer
+from renderer import CanvasRenderer, FloatingBadge
 from roguelike import SectorManager
 
 try:
@@ -307,15 +308,23 @@ class GameApp:
             elif etype == 'line_clear':
                 lines = ev.get('lines', 1)
                 self.audio.play_line_clear(lines)
-                self.renderer.trigger_shake(magnitude=lines * 2.5, duration=0.25)
+                self.renderer.trigger_shake(magnitude=lines * 3.0, duration=0.25)
                 
                 # Spawn spark particles
                 for row_idx in range(lines):
                     self.renderer.spawn_clear_particles(23 - row_idx, color='#00f0f0', count=25)
 
+                # Juicy badge for Tetris (4-line clear)
+                if lines >= 4:
+                    self.renderer.floating_badges.append(FloatingBadge("TETRIS!", "4-LINE CLEAR", icon='⚡', x=150, y=300, color='#00f0f0'))
+
+                # Combo announcement badge
+                combo_val = ev.get('combo', 0)
+                if combo_val > 1:
+                    self.renderer.floating_badges.append(FloatingBadge(f"COMBO x{combo_val}!", "+SCORE MULTIPLIER", icon='🔥', x=150, y=260, color='#ff00ff'))
+
                 # Check Rogue Mode progression
                 if self.sector_mgr:
-                    # Resonance Cascade relic bonus
                     if self.sector_mgr.has_relic('RESONANCE_CASCADE') and ev.get('combo', 0) > 0:
                         self.game.score += 200 * ev['combo'] * self.game.level
 
@@ -326,24 +335,49 @@ class GameApp:
             elif etype == 'ability_bomb':
                 self.audio.play_ability_sfx(ABILITY_BOMB)
                 bx, by = ev.get('x', 5), ev.get('y', 15)
-                self.renderer.spawn_explosion_particles(bx, by, color='#ff4500', count=45)
-                self.renderer.trigger_shake(magnitude=8.0, duration=0.35)
+                cleared_count = len(ev.get('cleared', []))
+                self.renderer.trigger_bomb_effect(bx, by, cleared_count)
 
             elif etype == 'ability_lightning':
                 self.audio.play_ability_sfx(ABILITY_LIGHTNING)
-                self.renderer.trigger_shake(magnitude=7.0, duration=0.3)
+                lx, ly = ev.get('x', 5), ev.get('y', 15)
+                cleared_count = len(ev.get('cleared', []))
+                self.renderer.trigger_lightning_effect(lx, ly, cleared_count)
                 if self.sector_mgr and self.sector_mgr.has_relic('SUPERCONDUCTOR'):
                     self.game.score += 1000
 
             elif etype == 'ability_magnet':
                 self.audio.play_ability_sfx(ABILITY_MAGNET)
+                mx, my = ev.get('x', 5), ev.get('y', 15)
+                moved = ev.get('moved', 0)
+                self.renderer.trigger_magnet_effect(mx, my, moved)
                 if self.sector_mgr and self.sector_mgr.has_relic('FLUX_CAPACITOR'):
-                    self.game.score += ev.get('moved', 0) * 200
+                    self.game.score += moved * 200
 
             elif etype == 'ability_freeze':
                 self.audio.play_ability_sfx(ABILITY_FREEZE)
+                fx, fy = ev.get('x', 5), ev.get('y', 15)
+                duration = ev.get('duration', 8.0)
                 if self.sector_mgr and self.sector_mgr.has_relic('CHRONO_OVERCLOCK'):
                     self.game.freeze_timer = 14.0
+                    duration = 14.0
+                self.renderer.trigger_freeze_effect(fx, fy, duration)
+
+            elif etype == 'ability_burning_placed':
+                self.audio.play_burning_ignite_sfx()
+                bx, by = ev.get('x', 5), ev.get('y', 15)
+                self.renderer.trigger_burning_placed_effect(bx, by)
+
+            elif etype == 'ability_burning_exploded':
+                self.audio.play_burning_detonate_sfx()
+                bx, by = ev.get('x', 5), ev.get('y', 15)
+                cleared_count = len(ev.get('cleared', []))
+                self.renderer.trigger_burning_exploded_effect(bx, by, cleared_count)
+
+            elif etype == 'ability_heavy_landed':
+                self.audio.play_heavy_sfx()
+                hx, hy = ev.get('x', 5), ev.get('y', 15)
+                self.renderer.trigger_heavy_landed_effect(hx, hy)
 
             elif etype == 'power_spawn':
                 self.audio.play_power_alert()

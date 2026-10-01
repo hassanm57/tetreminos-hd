@@ -103,5 +103,67 @@ class TestTetrisEngine(unittest.TestCase):
         self.assertIsNone(self.game.board[15][9])
         self.assertIsNone(self.game.board[10][4])
 
+    def test_burning_block_detonation(self):
+        """Burning mino should countdown and detonate surrounding 4 neighbors."""
+        from abilities import update_burning_blocks
+        from config import ABILITY_BURNING
+        
+        # Place burning block at (5, 18)
+        self.game.board[18][5] = {'color': '#ff4500', 'ability': ABILITY_BURNING, 'burn_timer': 1.0}
+        # Place neighbors
+        self.game.board[17][5] = {'color': '#00ffff', 'ability': ABILITY_NONE}
+        self.game.board[19][5] = {'color': '#00ffff', 'ability': ABILITY_NONE}
+        self.game.board[18][4] = {'color': '#00ffff', 'ability': ABILITY_NONE}
+        self.game.board[18][6] = {'color': '#00ffff', 'ability': ABILITY_NONE}
+
+        # Tick 0.5s -> shouldn't detonate yet
+        dets = update_burning_blocks(self.game.board, 0.5)
+        self.assertEqual(len(dets), 0)
+        self.assertAlmostEqual(self.game.board[18][5]['burn_timer'], 0.5)
+
+        # Tick another 0.6s -> should detonate!
+        dets = update_burning_blocks(self.game.board, 0.6)
+        self.assertEqual(len(dets), 1)
+        self.assertEqual(dets[0]['x'], 5)
+        self.assertEqual(dets[0]['y'], 18)
+        # All 5 cells (center + 4 orthogonal) should now be None
+        self.assertIsNone(self.game.board[18][5])
+        self.assertIsNone(self.game.board[17][5])
+        self.assertIsNone(self.game.board[19][5])
+        self.assertIsNone(self.game.board[18][4])
+        self.assertIsNone(self.game.board[18][6])
+
+    def test_heavy_rotation_restriction(self):
+        """Heavy block should not be able to rotate."""
+        from config import ABILITY_HEAVY
+        self.game.current_piece = Piece('T', ABILITY_HEAVY)
+        initial_rot = self.game.current_piece.rotation
+        rotated = self.game.rotate(clockwise=True)
+        self.assertFalse(rotated)
+        self.assertEqual(self.game.current_piece.rotation, initial_rot)
+
+    def test_renderer_effect_triggers(self):
+        """Renderer triggers should populate shockwaves, particles, and badges without error."""
+        from renderer import CanvasRenderer
+        renderer = CanvasRenderer()
+        renderer.trigger_bomb_effect(5, 15, cleared_count=9)
+        self.assertGreater(len(renderer.particles), 0)
+        self.assertGreater(len(renderer.shockwaves), 0)
+        self.assertGreater(len(renderer.floating_badges), 0)
+        self.assertGreater(len(renderer.screen_flashes), 0)
+
+        renderer.trigger_lightning_effect(4, 12, cleared_count=18)
+        self.assertGreater(len(renderer.lightning_effects), 0)
+
+        renderer.trigger_freeze_effect(5, 10, duration=8.0)
+        renderer.trigger_magnet_effect(5, 10, moved_count=3)
+        renderer.trigger_burning_placed_effect(5, 10)
+        renderer.trigger_burning_exploded_effect(5, 10, cleared_count=5)
+        renderer.trigger_heavy_landed_effect(5, 10)
+
+        # Update all effects by delta_time
+        renderer.update_particles(0.1)
+        self.assertGreater(len(renderer.particles), 0)
+
 if __name__ == '__main__':
     unittest.main()

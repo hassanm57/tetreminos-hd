@@ -355,7 +355,7 @@ class TetrisGame:
                 self.pending_events.append({'type': 'ability_magnet', 'x': ax, 'y': ay, 'moved': moved})
             elif ability == ABILITY_FREEZE:
                 execute_freeze(self, duration=8.0, piece_count=3)
-                self.pending_events.append({'type': 'ability_freeze', 'duration': 8.0})
+                self.pending_events.append({'type': 'ability_freeze', 'duration': 8.0, 'x': ax, 'y': ay})
             elif ability == ABILITY_BURNING:
                 self.pending_events.append({'type': 'ability_burning_placed', 'x': ax, 'y': ay})
             elif ability == ABILITY_HEAVY:
@@ -527,9 +527,14 @@ class TetrisGame:
                 self.pending_events.append({'type': 'freeze_ended'})
 
         # Update burning blocks
-        exploded = update_burning_blocks(self.board, delta_time)
-        if len(exploded) > 0:
-            self.pending_events.append({'type': 'ability_burning_exploded', 'cells': exploded})
+        detonations = update_burning_blocks(self.board, delta_time)
+        for det in detonations:
+            self.pending_events.append({
+                'type': 'ability_burning_exploded',
+                'x': det['x'],
+                'y': det['y'],
+                'cleared': det['cleared']
+            })
 
         if self.current_piece is None:
             return
