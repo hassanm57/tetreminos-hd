@@ -350,11 +350,11 @@ class FireEruptionEffect:
 
 class LineBreakExplosionEffect:
     """
-    Punchy, clean line break animation that generates at the center of a cleared row
-    and explodes outward horizontally to the left and right with high-intensity laser core,
-    plasma aura, and dual expanding blast flare heads.
+    Minimal, ultra-fast line break laser slice.
+    Rapidly slices from the horizontal center outward to both edges (0.15s duration).
+    Features a clean row flash, razor-sharp white laser core, and subtle cyan glow.
     """
-    def __init__(self, row_y, mid_x, cy, board_w, duration=0.38, color='#00f0f0'):
+    def __init__(self, row_y, mid_x, cy, board_w, duration=0.15, color='#00f0f0'):
         self.row_y = row_y
         self.mid_x = mid_x
         self.cy = cy
@@ -374,64 +374,60 @@ class LineBreakExplosionEffect:
             return
 
         progress = min(1.0, self.elapsed / self.duration)
-        # Fast explosive ease-out (cubic)
-        ease = 1.0 - math.pow(1.0 - progress, 3)
-        alpha = math.sin((1.0 - progress) * (math.pi / 2))
+        alpha = 1.0 - progress
 
-        half_w = (self.board_w / 2.0) * ease
+        # Beam slices to both walls very quickly (in first 55% of duration)
+        sweep_prog = min(1.0, progress / 0.55)
+        sweep_ease = 1.0 - math.pow(1.0 - sweep_prog, 3)
+        half_w = (self.board_w / 2.0) * sweep_ease
+
         x1 = offset_x + self.mid_x - half_w
         x2 = offset_x + self.mid_x + half_w
-        y = offset_y + self.cy
+        cy = offset_y + self.cy
+        top_y = cy - (BLOCK_SIZE / 2.0)
+        beam_w = max(0.0, x2 - x1)
 
         ctx.save()
 
-        # 1. Broad vibrant ambient plasma glow
-        ctx.globalAlpha = alpha * 0.7
+        # 1. Clean, minimal row flash over the cleared cell row (soft white light)
+        row_alpha = alpha * 0.40
+        if row_alpha > 0.01:
+            ctx.globalAlpha = row_alpha
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(x1, top_y + 1, beam_w, BLOCK_SIZE - 2)
+
+        # 2. Sleek outer cyan slice glow
+        ctx.globalAlpha = alpha * 0.8
         ctx.strokeStyle = self.color
         ctx.shadowColor = self.color
-        ctx.shadowBlur = 24
-        ctx.lineWidth = max(2.0, (BLOCK_SIZE * 0.95) * (1.0 - progress * 0.6))
+        ctx.shadowBlur = 10
+        ctx.lineWidth = max(1.5, 4.0 * (1.0 - progress))
         ctx.beginPath()
-        ctx.moveTo(x1, y)
-        ctx.lineTo(x2, y)
+        ctx.moveTo(x1, cy)
+        ctx.lineTo(x2, cy)
         ctx.stroke()
 
-        # 2. Electric neon beam
-        ctx.globalAlpha = alpha * 0.9
-        ctx.strokeStyle = '#38bdf8'
-        ctx.shadowBlur = 12
-        ctx.lineWidth = max(1.5, (BLOCK_SIZE * 0.5) * (1.0 - progress * 0.4))
-        ctx.beginPath()
-        ctx.moveTo(x1, y)
-        ctx.lineTo(x2, y)
-        ctx.stroke()
-
-        # 3. Blinding pure white core
+        # 3. Razor-sharp white laser core
         ctx.globalAlpha = alpha
         ctx.strokeStyle = '#ffffff'
         ctx.shadowColor = '#ffffff'
-        ctx.shadowBlur = 8
-        ctx.lineWidth = max(1.0, (BLOCK_SIZE * 0.25) * (1.0 - progress))
+        ctx.shadowBlur = 6
+        ctx.lineWidth = max(1.0, 2.0 * (1.0 - progress))
         ctx.beginPath()
-        ctx.moveTo(x1, y)
-        ctx.lineTo(x2, y)
+        ctx.moveTo(x1, cy)
+        ctx.lineTo(x2, cy)
         ctx.stroke()
 
-        # 4. Outward exploding blast flare heads leading at left and right wave fronts
-        head_r = max(2.5, (BLOCK_SIZE * 0.65) * (1.0 - progress * 0.4))
-        ctx.fillStyle = '#ffffff'
-        ctx.shadowColor = self.color
-        ctx.shadowBlur = 16
-
-        # Left flare
-        ctx.beginPath()
-        ctx.arc(x1, y, head_r, 0, math.pi * 2)
-        ctx.fill()
-
-        # Right flare
-        ctx.beginPath()
-        ctx.arc(x2, y, head_r, 0, math.pi * 2)
-        ctx.fill()
+        # 4. Crisp micro-flares at cutting edge tips while expanding
+        if sweep_prog < 0.95:
+            flare_r = max(1.5, 3.5 * (1.0 - progress))
+            ctx.fillStyle = '#ffffff'
+            ctx.shadowColor = '#00f0f0'
+            ctx.shadowBlur = 8
+            ctx.beginPath()
+            ctx.arc(x1, cy, flare_r, 0, math.pi * 2)
+            ctx.arc(x2, cy, flare_r, 0, math.pi * 2)
+            ctx.fill()
 
         ctx.restore()
 
@@ -592,69 +588,50 @@ class CanvasRenderer:
 
     def trigger_line_clear_effect(self, cleared_rows, lines=1):
         """
-        Explosive outward line break animation with screen flash, central shockwave,
-        and high-energy plasma laser bursting from the middle to the left and right.
+        Minimal, lightning-fast horizontal line break slice (0.15s).
+        Crisp row flash, razor-sharp laser sweep from center outward, and clean micro-sparks.
         """
         board_pixel_w = BOARD_WIDTH * BLOCK_SIZE
         mid_x = board_pixel_w / 2.0
 
-        # 1. Whole-screen flash (just like bomb)
-        flash_alpha = min(0.38, 0.22 + lines * 0.05)
-        self.screen_flashes.append(ScreenFlash(color='#ffffff', initial_alpha=flash_alpha, duration=0.14))
+        # 1. Subtle, crisp micro-nudge shake (not dizzying or clunky)
+        shake_mag = min(3.5, 1.6 + lines * 0.5)
+        self.trigger_shake(magnitude=shake_mag, duration=0.09)
 
-        # 2. Punchy screen shake
-        shake_mag = min(12.0, 4.0 + lines * 2.2)
-        self.trigger_shake(magnitude=shake_mag, duration=0.25)
+        # 2. Instantaneous subtle light pulse (0.08s)
+        self.screen_flashes.append(ScreenFlash(color='#ffffff', initial_alpha=0.14, duration=0.08))
 
         # Fallback if row indices not passed
         if not cleared_rows:
             cleared_rows = [23 - i for i in range(lines)]
 
-        colors = ['#ffffff', '#00f0f0', '#7df9ff', '#38bdf8']
+        colors = ['#ffffff', '#00f0f0', '#7df9ff']
 
         for row_y in cleared_rows:
             cy = (row_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2.0)
 
-            # Central shockwave ring exploding from the middle
+            # Tiny, fast central micro-ring (dissolves in 0.10s)
             self.shockwaves.append(ShockwaveEffect(
-                mid_x, cy, max_radius=80, duration=0.36,
-                color_outer='#00f0f0', color_inner='#ffffff', ring_width=4.0
+                mid_x, cy, max_radius=32, duration=0.10,
+                color_outer='#00f0f0', color_inner='#ffffff', ring_width=1.5
             ))
 
-            # Horizontal line break exploding from middle to left and right
+            # Minimal outward laser slice
             self.line_breaks.append(LineBreakExplosionEffect(
-                row_y, mid_x, cy, board_pixel_w, duration=0.38, color='#00f0f0'
+                row_y, mid_x, cy, board_pixel_w, duration=0.15, color='#00f0f0'
             ))
 
-            # Leftward exploding particles from middle
-            for _ in range(16):
-                spd = random.uniform(5.0, 11.0)
-                vx = -spd
-                vy = random.uniform(-2.5, 2.5)
-                c = random.choice(colors)
+            # Fast micro-sparks shooting outward horizontally (fade in 0.16s)
+            for _ in range(3):
                 self.particles.append(Particle(
-                    mid_x, cy, c, vx=vx, vy=vy, style='spark',
-                    size=random.uniform(2.5, 4.5), life=0.55, decay=0.04
+                    mid_x, cy, random.choice(colors),
+                    vx=-random.uniform(7.0, 13.0), vy=random.uniform(-1.0, 1.0),
+                    style='spark', size=random.uniform(1.8, 2.8), life=0.16, decay=0.08
                 ))
-
-            # Rightward exploding particles from middle
-            for _ in range(16):
-                spd = random.uniform(5.0, 11.0)
-                vx = spd
-                vy = random.uniform(-2.5, 2.5)
-                c = random.choice(colors)
                 self.particles.append(Particle(
-                    mid_x, cy, c, vx=vx, vy=vy, style='spark',
-                    size=random.uniform(2.5, 4.5), life=0.55, decay=0.04
-                ))
-
-            # Ambient spark spray along row
-            for _ in range(12):
-                rx = random.uniform(0, board_pixel_w)
-                c = random.choice(colors)
-                self.particles.append(Particle(
-                    rx, cy, c, vx=random.uniform(-3, 3), vy=random.uniform(-4, 4),
-                    style='spark', size=random.uniform(2.0, 4.0), life=0.5, decay=0.035
+                    mid_x, cy, random.choice(colors),
+                    vx=random.uniform(7.0, 13.0), vy=random.uniform(-1.0, 1.0),
+                    style='spark', size=random.uniform(1.8, 2.8), life=0.16, decay=0.08
                 ))
 
     # High-impact, pleasing power ability triggers
