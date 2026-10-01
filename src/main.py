@@ -68,6 +68,7 @@ class GameApp:
 
         # Bind touch/mouse UI button events
         self.setup_ui_buttons()
+        self.setup_touch_controls()
 
         # Start 60 FPS animation loop
         self.last_frame_time = time.time()
@@ -191,6 +192,262 @@ class GameApp:
                     return handler
                 proxy = create_proxy(make_handler(action))
                 btn.addEventListener("click", proxy)
+
+    def setup_touch_controls(self):
+        """Attaches low-latency touch and pointer listeners for mobile controls and canvas gestures."""
+        if not HAS_BROWSER_ENV:
+            return
+
+        # 1. Left button (move left + DAS hold)
+        btn_left = js.document.getElementById("touch-left")
+        if btn_left:
+            def on_left_start(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.left_held = True
+                self.right_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+                self.game.move_left()
+                self.vibrate(12)
+
+            def on_left_end(evt):
+                evt.preventDefault()
+                self.left_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+
+            btn_left.addEventListener("touchstart", create_proxy(on_left_start))
+            btn_left.addEventListener("touchend", create_proxy(on_left_end))
+            btn_left.addEventListener("touchcancel", create_proxy(on_left_end))
+            btn_left.addEventListener("mousedown", create_proxy(on_left_start))
+            btn_left.addEventListener("mouseup", create_proxy(on_left_end))
+            btn_left.addEventListener("mouseleave", create_proxy(on_left_end))
+
+        # 2. Right button (move right + DAS hold)
+        btn_right = js.document.getElementById("touch-right")
+        if btn_right:
+            def on_right_start(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.right_held = True
+                self.left_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+                self.game.move_right()
+                self.vibrate(12)
+
+            def on_right_end(evt):
+                evt.preventDefault()
+                self.right_held = False
+                self.hold_timer = 0.0
+                self.repeat_timer = 0.0
+
+            btn_right.addEventListener("touchstart", create_proxy(on_right_start))
+            btn_right.addEventListener("touchend", create_proxy(on_right_end))
+            btn_right.addEventListener("touchcancel", create_proxy(on_right_end))
+            btn_right.addEventListener("mousedown", create_proxy(on_right_start))
+            btn_right.addEventListener("mouseup", create_proxy(on_right_end))
+            btn_right.addEventListener("mouseleave", create_proxy(on_right_end))
+
+        # 3. Soft drop (move down + continuous drop)
+        btn_down = js.document.getElementById("touch-down")
+        if btn_down:
+            def on_down_start(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.down_held = True
+                self.down_timer = 0.0
+                self.game.soft_drop()
+                self.audio.play_soft_drop()
+                self.vibrate(10)
+
+            def on_down_end(evt):
+                evt.preventDefault()
+                self.down_held = False
+                self.down_timer = 0.0
+
+            btn_down.addEventListener("touchstart", create_proxy(on_down_start))
+            btn_down.addEventListener("touchend", create_proxy(on_down_end))
+            btn_down.addEventListener("touchcancel", create_proxy(on_down_end))
+            btn_down.addEventListener("mousedown", create_proxy(on_down_start))
+            btn_down.addEventListener("mouseup", create_proxy(on_down_end))
+            btn_down.addEventListener("mouseleave", create_proxy(on_down_end))
+
+        # 4. Rotate Clockwise (CW)
+        btn_cw = js.document.getElementById("touch-rot-cw")
+        if btn_cw:
+            def on_cw_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.game.rotate(clockwise=True)
+                self.vibrate(15)
+
+            btn_cw.addEventListener("touchstart", create_proxy(on_cw_press))
+            btn_cw.addEventListener("mousedown", create_proxy(on_cw_press))
+
+        # 5. Rotate Counter-Clockwise (CCW)
+        btn_ccw = js.document.getElementById("touch-rot-ccw")
+        if btn_ccw:
+            def on_ccw_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.game.rotate(clockwise=False)
+                self.vibrate(15)
+
+            btn_ccw.addEventListener("touchstart", create_proxy(on_ccw_press))
+            btn_ccw.addEventListener("mousedown", create_proxy(on_ccw_press))
+
+        # 6. Hard Drop / Slam
+        btn_slam = js.document.getElementById("touch-hard-drop")
+        if btn_slam:
+            def on_slam_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                self.game.hard_drop()
+                self.vibrate(25)
+
+            btn_slam.addEventListener("touchstart", create_proxy(on_slam_press))
+            btn_slam.addEventListener("mousedown", create_proxy(on_slam_press))
+
+        # 7. Hold Piece
+        btn_hold = js.document.getElementById("touch-hold")
+        if btn_hold:
+            def on_hold_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                self.game.hold()
+                self.vibrate(15)
+
+            btn_hold.addEventListener("touchstart", create_proxy(on_hold_press))
+            btn_hold.addEventListener("click", create_proxy(on_hold_press))
+
+        # 8. Pause / Resume
+        btn_pause = js.document.getElementById("touch-pause")
+        if btn_pause:
+            def on_pause_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                self.game.is_paused = not self.game.is_paused
+
+            btn_pause.addEventListener("touchstart", create_proxy(on_pause_press))
+            btn_pause.addEventListener("click", create_proxy(on_pause_press))
+
+        # 9. Power Arsenal Drawer
+        btn_intel = js.document.getElementById("touch-intel")
+        if btn_intel:
+            def on_intel_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                self.toggle_power_drawer()
+
+            btn_intel.addEventListener("touchstart", create_proxy(on_intel_press))
+            btn_intel.addEventListener("click", create_proxy(on_intel_press))
+
+        # 10. Reboot
+        btn_restart = js.document.getElementById("touch-restart")
+        if btn_restart:
+            def on_restart_press(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                self.restart_game()
+
+            btn_restart.addEventListener("touchstart", create_proxy(on_restart_press))
+            btn_restart.addEventListener("click", create_proxy(on_restart_press))
+
+        # 11. Canvas Direct Touch Gestures
+        if self.canvas:
+            self.touch_start_x = 0
+            self.touch_start_y = 0
+            self.touch_last_x = 0
+            self.touch_last_y = 0
+            self.touch_start_time = 0
+
+            def on_canvas_touchstart(evt):
+                evt.preventDefault()
+                self.audio.init_context()
+                if self.game.game_over:
+                    self.restart_game()
+                    return
+                touch = evt.touches[0]
+                self.touch_start_x = touch.clientX
+                self.touch_start_y = touch.clientY
+                self.touch_last_x = touch.clientX
+                self.touch_last_y = touch.clientY
+                self.touch_start_time = time.time()
+
+            def on_canvas_touchmove(evt):
+                evt.preventDefault()
+                if len(evt.touches) == 0:
+                    return
+                touch = evt.touches[0]
+                dx = touch.clientX - self.touch_last_x
+                dy = touch.clientY - self.touch_last_y
+
+                # Horizontal cell shift
+                if abs(dx) >= 26:
+                    if dx > 0:
+                        self.game.move_right()
+                    else:
+                        self.game.move_left()
+                    self.touch_last_x = touch.clientX
+                    self.vibrate(8)
+
+                # Vertical drag down for soft drop
+                if dy >= 26:
+                    self.game.soft_drop()
+                    self.audio.play_soft_drop()
+                    self.touch_last_y = touch.clientY
+
+            def on_canvas_touchend(evt):
+                evt.preventDefault()
+                dt = time.time() - self.touch_start_time
+                total_dx = self.touch_last_x - self.touch_start_x
+                total_dy = self.touch_last_y - self.touch_start_y
+
+                # Quick tap on board -> Rotate CW
+                if abs(total_dx) < 18 and abs(total_dy) < 18 and dt < 0.25:
+                    self.game.rotate(clockwise=True)
+                    self.vibrate(12)
+                # Swipe Up -> Hold
+                elif total_dy < -40 and dt < 0.35:
+                    self.game.hold()
+                    self.vibrate(15)
+                # Fast Flick Down -> Hard Drop
+                elif total_dy > 70 and dt < 0.22:
+                    self.game.hard_drop()
+                    self.vibrate(25)
+
+            self.canvas.addEventListener("touchstart", create_proxy(on_canvas_touchstart))
+            self.canvas.addEventListener("touchmove", create_proxy(on_canvas_touchmove))
+            self.canvas.addEventListener("touchend", create_proxy(on_canvas_touchend))
+            self.canvas.addEventListener("touchcancel", create_proxy(on_canvas_touchend))
+
+    def vibrate(self, duration_ms):
+        """Haptic feedback on mobile if device supports it."""
+        try:
+            if hasattr(js.window.navigator, 'vibrate'):
+                js.window.navigator.vibrate(duration_ms)
+        except Exception:
+            pass
 
     def open_controls_modal(self):
         """Opens the Operational Controls modal and pauses gameplay."""

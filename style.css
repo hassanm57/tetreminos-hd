@@ -609,12 +609,272 @@ body {
   font-family: 'Neuropol', sans-serif;
 }
 
-/* Responsive Scaling */
+/* Mobile Touch Controls Virtual Gamepad */
+.mobile-controls {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* Quick Utility Row */
+.mobile-utility-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+
+.touch-pill-btn {
+  flex: 1;
+  background: rgba(14, 14, 22, 0.9);
+  border: 1px solid #272738;
+  color: #cbd5e1;
+  padding: 8px 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  backdrop-filter: blur(8px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-pill-btn:active {
+  background: #ffffff;
+  color: #000000;
+  transform: scale(0.95);
+  border-color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.touch-restart-btn {
+  color: #f87171;
+  border-color: #451a1a;
+}
+.touch-restart-btn:active {
+  background: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Main Gamepad Touch Arena */
+.mobile-touch-arena {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+/* Base button style */
+.touch-game-btn {
+  background: rgba(18, 18, 26, 0.92);
+  border: 1.5px solid #2e2e42;
+  border-radius: 10px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.08s ease, border-color 0.08s ease;
+  backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.touch-game-btn:active {
+  transform: scale(0.92);
+}
+
+/* Left D-Pad */
+.touch-dpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  flex: 1.4;
+  max-width: 220px;
+}
+
+.dpad-btn {
+  height: 60px;
+}
+
+.dpad-left:active, .dpad-right:active {
+  background: #00f0f0;
+  color: #000000;
+  border-color: #00f0f0;
+  box-shadow: 0 0 16px rgba(0, 240, 240, 0.7);
+}
+
+.dpad-down:active {
+  background: #ffe600;
+  color: #000000;
+  border-color: #ffe600;
+  box-shadow: 0 0 16px rgba(255, 230, 0, 0.7);
+}
+
+.touch-glyph {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.touch-sublabel {
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Center Slam Button */
+.touch-center-slot {
+  flex: 0.8;
+  max-width: 95px;
+}
+
+.slam-btn {
+  width: 100%;
+  height: 60px;
+  border-color: #ff0055;
+  background: rgba(30, 10, 20, 0.88);
+  color: #ff0055;
+}
+
+.slam-btn:active {
+  background: #ff0055;
+  color: #ffffff;
+  border-color: #ff0055;
+  box-shadow: 0 0 22px rgba(255, 0, 85, 0.85);
+}
+
+/* Right Action Buttons (Rotations) */
+.touch-action-grid {
+  display: flex;
+  gap: 6px;
+  flex: 1.1;
+  max-width: 170px;
+}
+
+.rot-btn {
+  flex: 1;
+  height: 60px;
+}
+
+.rot-cw {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.rot-cw:active {
+  background: #38bdf8;
+  color: #000000;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
+}
+
+.rot-ccw {
+  border-color: #c084fc;
+  color: #c084fc;
+}
+
+.rot-ccw:active {
+  background: #c084fc;
+  color: #000000;
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.75);
+}
+
+/* Hide mobile controls on large desktop screens with mouse pointers */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  .mobile-controls {
+    display: none;
+  }
+}
+
+/* Responsive Scaling & Mobile Layout Polish */
 @media (max-width: 768px) {
+  .game-wrapper {
+    padding: 8px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .cyber-header {
+    padding: 8px 12px;
+  }
   .logo-container h1 {
-    font-size: 18px;
+    font-size: 17px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    font-size: 9px;
   }
   .relic-cards-grid, .mode-cards-grid {
     grid-template-columns: 1fr;
+  }
+  .power-drawer.collapsed {
+    transform: translate(290px, -50%);
+  }
+  .drawer-content {
+    width: 290px;
+    max-width: 85vw;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 0;
+  }
+  .game-wrapper {
+    padding: 4px 6px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+  .cyber-header {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+  }
+  .logo-container h1 {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+  .header-controls {
+    gap: 4px;
+  }
+  .cyber-btn {
+    font-size: 9px;
+    padding: 5px 7px;
+  }
+  .dpad-btn, .slam-btn, .rot-btn {
+    height: 52px;
+  }
+  .touch-glyph {
+    font-size: 19px;
+  }
+  .touch-sublabel {
+    font-size: 7.5px;
+  }
+  .relic-modal-content {
+    padding: 16px 12px;
+    width: 95%;
+  }
+  .power-drawer.collapsed {
+    transform: translate(270px, -50%);
+  }
+  .drawer-content {
+    width: 270px;
+    max-width: 88vw;
+    padding: 12px;
   }
 }

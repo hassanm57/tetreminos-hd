@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
   <title>Tetreminos HD: Neon Resonance 🎮⚡</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,50 +84,110 @@
       <div id="controlsModal" class="relic-modal" style="display: none;">
         <div class="relic-modal-content controls-modal-content">
           <h2 class="relic-header">🎮 OPERATIONAL CONTROLS</h2>
-          <p class="relic-sub">Precision Guideline keyboard keybindings:</p>
+          <p class="relic-sub">Precision Guideline keyboard keybindings & mobile touch:</p>
           
           <div class="controls-grid">
             <div class="control-row">
               <span class="control-label">Move Left / Right</span>
-              <span class="control-keys"><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd></span>
+              <span class="control-keys"><kbd>←</kbd> <kbd>→</kbd> or <kbd>◀</kbd> <kbd>▶</kbd> / Swipe</span>
             </div>
             <div class="control-row">
               <span class="control-label">Rotate Clockwise (SRS)</span>
-              <span class="control-keys"><kbd>↑</kbd> or <kbd>W</kbd> or <kbd>X</kbd></span>
+              <span class="control-keys"><kbd>↑</kbd> <kbd>W</kbd> or <kbd>↻ CW</kbd> / Tap Board</span>
             </div>
             <div class="control-row">
               <span class="control-label">Rotate Counter-Clockwise</span>
-              <span class="control-keys"><kbd>Z</kbd> or <kbd>Ctrl</kbd></span>
+              <span class="control-keys"><kbd>Z</kbd> or <kbd>↺ CCW</kbd></span>
             </div>
             <div class="control-row">
               <span class="control-label">Soft Drop</span>
-              <span class="control-keys"><kbd>↓</kbd> or <kbd>S</kbd></span>
+              <span class="control-keys"><kbd>↓</kbd> <kbd>S</kbd> or <kbd>▼ DROP</kbd> / Drag Down</span>
             </div>
             <div class="control-row">
               <span class="control-label">Hard Drop</span>
-              <span class="control-keys"><kbd>Spacebar</kbd></span>
+              <span class="control-keys"><kbd>Space</kbd> or <kbd>⚡ SLAM</kbd> / Flick Down</span>
             </div>
             <div class="control-row">
               <span class="control-label">Hold Piece</span>
-              <span class="control-keys"><kbd>C</kbd> or <kbd>Shift</kbd></span>
+              <span class="control-keys"><kbd>C</kbd> or <kbd>📦 HOLD</kbd> / Swipe Up</span>
             </div>
             <div class="control-row">
               <span class="control-label">Pause / Resume</span>
-              <span class="control-keys"><kbd>P</kbd> or <kbd>Esc</kbd></span>
+              <span class="control-keys"><kbd>P</kbd> or <kbd>⏸ PAUSE</kbd></span>
             </div>
             <div class="control-row">
               <span class="control-label">Reboot Run</span>
-              <span class="control-keys"><kbd>R</kbd></span>
+              <span class="control-keys"><kbd>R</kbd> or <kbd>🔄 REBOOT</kbd></span>
             </div>
             <div class="control-row">
               <span class="control-label">Select Relic (Rogue)</span>
-              <span class="control-keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
+              <span class="control-keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> or Tap Card</span>
             </div>
           </div>
 
-          <div class="mode-actions" style="margin-top: 20px;">
+          <div class="mode-actions" style="margin-top: 16px;">
             <button id="btn-controls-close" class="cyber-btn deploy-btn">RETURN TO GAME</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Controls Virtual Gamepad -->
+    <div id="mobileControls" class="mobile-controls">
+      <!-- Quick Utility Row -->
+      <div class="mobile-utility-row">
+        <button id="touch-hold" class="touch-pill-btn" aria-label="Hold Piece">
+          <span class="touch-icon">📦</span>
+          <span class="touch-text">HOLD</span>
+        </button>
+        <button id="touch-pause" class="touch-pill-btn" aria-label="Pause Game">
+          <span class="touch-icon">⏸</span>
+          <span class="touch-text">PAUSE</span>
+        </button>
+        <button id="touch-intel" class="touch-pill-btn" aria-label="Power Arsenal Intel">
+          <span class="touch-icon">⚡</span>
+          <span class="touch-text">ARSENAL</span>
+        </button>
+        <button id="touch-restart" class="touch-pill-btn touch-restart-btn" aria-label="Reboot Game">
+          <span class="touch-icon">🔄</span>
+          <span class="touch-text">REBOOT</span>
+        </button>
+      </div>
+
+      <!-- Main Gamepad Touch Arena -->
+      <div class="mobile-touch-arena">
+        <!-- Left Side: D-Pad Navigation -->
+        <div class="touch-dpad-grid">
+          <button id="touch-left" class="touch-game-btn dpad-btn dpad-left" aria-label="Move Left">
+            <span class="touch-glyph">◀</span>
+          </button>
+          <button id="touch-down" class="touch-game-btn dpad-btn dpad-down" aria-label="Soft Drop">
+            <span class="touch-glyph">▼</span>
+            <span class="touch-sublabel">DROP</span>
+          </button>
+          <button id="touch-right" class="touch-game-btn dpad-btn dpad-right" aria-label="Move Right">
+            <span class="touch-glyph">▶</span>
+          </button>
+        </div>
+
+        <!-- Center: Hard Drop / Slam Button -->
+        <div class="touch-center-slot">
+          <button id="touch-hard-drop" class="touch-game-btn slam-btn" aria-label="Hard Drop Slam">
+            <span class="touch-glyph">⚡</span>
+            <span class="touch-sublabel">SLAM</span>
+          </button>
+        </div>
+
+        <!-- Right Side: Rotations (CCW & CW) -->
+        <div class="touch-action-grid">
+          <button id="touch-rot-ccw" class="touch-game-btn rot-btn rot-ccw" aria-label="Rotate Counter-Clockwise">
+            <span class="touch-glyph">↺</span>
+            <span class="touch-sublabel">CCW</span>
+          </button>
+          <button id="touch-rot-cw" class="touch-game-btn rot-btn rot-cw" aria-label="Rotate Clockwise">
+            <span class="touch-glyph">↻</span>
+            <span class="touch-sublabel">CW</span>
+          </button>
         </div>
       </div>
     </div>
