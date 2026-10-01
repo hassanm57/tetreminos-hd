@@ -46,6 +46,12 @@
     <div class="canvas-container">
       <canvas id="gameCanvas" width="750" height="720"></canvas>
 
+      <!-- Mobile Tactical Arsenal Floating Button (Mobile Only) -->
+      <button id="btn-mobile-arsenal" class="mobile-arsenal-btn" aria-label="Open Tactical Arsenal">
+        <span class="btn-icon">⚡</span>
+        <span class="btn-label">ARSENAL</span>
+      </button>
+
       <!-- Loading Screen Overlay -->
       <div id="loadingOverlay" class="loading-overlay">
         <div class="cyber-spinner"></div>
@@ -161,7 +167,10 @@
 
     <div class="drawer-content">
       <div class="drawer-header">
-        <span class="drawer-title">⚡ TACTICAL ARSENAL</span>
+        <div class="drawer-header-row">
+          <span class="drawer-title">⚡ TACTICAL ARSENAL</span>
+          <button id="btn-close-drawer" class="drawer-close-btn" aria-label="Close Arsenal">✕ CLOSE</button>
+        </div>
         <span class="drawer-subtitle">SPECIAL MINO PAYLOAD INTEL</span>
       </div>
 
@@ -300,6 +309,7 @@ import main
 
         setTimeout(() => {
           overlay.style.opacity = "0";
+          overlay.style.pointerEvents = "none";
           setTimeout(() => {
             overlay.style.display = "none";
           }, 400);
@@ -310,6 +320,209 @@ import main
         statusText.innerHTML = `<span style="color:#ff0055">System initialization error. Please refresh.</span>`;
       }
     }
+
+    // High-responsiveness Touch Controller for Mobile Devices
+    (function initMobileTouchEngine() {
+      const canvas = document.getElementById("gameCanvas");
+      const container = document.querySelector(".canvas-container");
+      if (!canvas) return;
+
+      let startX = 0, startY = 0;
+      let lastX = 0, lastY = 0;
+      let startTime = 0;
+      let accumX = 0, accumY = 0;
+      let hasMoved = false;
+      let hardDropped = false;
+
+      function getTouch(e) {
+        if (e.touches && e.touches.length > 0) return e.touches[0];
+        if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0];
+        return e;
+      }
+
+      function handleTouchStart(e) {
+        if (e.touches && e.touches.length > 1) return;
+        e.preventDefault();
+
+        if (window.tetrisApp && window.tetrisApp.audio) {
+          window.tetrisApp.audio.init_context();
+        }
+
+        const t = getTouch(e);
+        startX = t.clientX;
+        startY = t.clientY;
+        lastX = t.clientX;
+        lastY = t.clientY;
+        startTime = Date.now();
+        accumX = 0;
+        accumY = 0;
+        hasMoved = false;
+        hardDropped = false;
+      }
+
+      function handleTouchMove(e) {
+        e.preventDefault();
+        if (hardDropped) return;
+
+        const t = getTouch(e);
+        const curX = t.clientX;
+        const curY = t.clientY;
+
+        const dx = curX - lastX;
+        const dy = curY - lastY;
+        lastX = curX;
+        lastY = curY;
+
+        const totalDy = curY - startY;
+        const elapsed = Date.now() - startTime;
+
+        // Instant downward flick hard drop
+        if (totalDy > 48 && elapsed < 200 && dy > 16) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_hard_drop) {
+            window.tetrisApp.handle_touch_hard_drop();
+          }
+          hardDropped = true;
+          hasMoved = true;
+          return;
+        }
+
+        accumX += dx;
+        accumY += dy;
+
+        const rect = canvas.getBoundingClientRect();
+        const stepX = Math.max(18, Math.min(32, rect.width / 12));
+        const stepY = Math.max(16, Math.min(28, rect.height / 28));
+
+        // Horizontal shifts (slide finger left / right)
+        while (accumX >= stepX) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_move_right) {
+            window.tetrisApp.handle_touch_move_right();
+          }
+          accumX -= stepX;
+          hasMoved = true;
+        }
+
+        while (accumX <= -stepX) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_move_left) {
+            window.tetrisApp.handle_touch_move_left();
+          }
+          accumX += stepX;
+          hasMoved = true;
+        }
+
+        // Vertical soft drop (drag finger down to speed up)
+        while (accumY >= stepY) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_soft_drop) {
+            window.tetrisApp.handle_touch_soft_drop();
+          }
+          accumY -= stepY;
+          hasMoved = true;
+        }
+      }
+
+      function handleTouchEnd(e) {
+        e.preventDefault();
+        if (hardDropped) return;
+
+        const t = getTouch(e);
+        const endX = t.clientX;
+        const endY = t.clientY;
+        const totalDx = endX - startX;
+        const totalDy = endY - startY;
+        const elapsed = Date.now() - startTime;
+
+        // 1. Swipe Down -> Hard Drop
+        if (totalDy > 42 && (totalDy / Math.max(10, elapsed) > 0.24 || elapsed < 240)) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_hard_drop) {
+            window.tetrisApp.handle_touch_hard_drop();
+          }
+          return;
+        }
+
+        // 2. Swipe Up -> Hold
+        if (totalDy < -38 && elapsed < 350 && Math.abs(totalDx) < Math.abs(totalDy) * 1.5) {
+          if (window.tetrisApp && window.tetrisApp.handle_touch_hold) {
+            window.tetrisApp.handle_touch_hold();
+          }
+          return;
+        }
+
+        // 3. Clean Tap -> Rotate CW (or Hold if tapped on top-left box)
+        if (!hasMoved && Math.abs(totalDx) < 18 && Math.abs(totalDy) < 18 && elapsed < 280) {
+          const rect = canvas.getBoundingClientRect();
+          const canvasX = (endX - rect.left) * (canvas.width / rect.width);
+          const canvasY = (endY - rect.top) * (canvas.height / rect.height);
+
+          if (window.tetrisApp) {
+            // Tap on top-left HOLD box
+            if (canvas.width < 550 && canvasY <= 76 && canvasX <= 76) {
+              if (window.tetrisApp.handle_touch_hold) {
+                window.tetrisApp.handle_touch_hold();
+                return;
+              }
+            }
+            // Standard tap -> Rotate Clockwise (or restart on Game Over)
+            if (window.tetrisApp.handle_touch_rotate_cw) {
+              window.tetrisApp.handle_touch_rotate_cw();
+            }
+          }
+        }
+      }
+
+      const listenerOpts = { passive: false };
+      canvas.addEventListener("touchstart", handleTouchStart, listenerOpts);
+      canvas.addEventListener("touchmove", handleTouchMove, listenerOpts);
+      canvas.addEventListener("touchend", handleTouchEnd, listenerOpts);
+      canvas.addEventListener("touchcancel", handleTouchEnd, listenerOpts);
+
+      if (container && container !== canvas) {
+        container.addEventListener("touchstart", handleTouchStart, listenerOpts);
+        container.addEventListener("touchmove", handleTouchMove, listenerOpts);
+        container.addEventListener("touchend", handleTouchEnd, listenerOpts);
+        container.addEventListener("touchcancel", handleTouchEnd, listenerOpts);
+      }
+    })();
+
+    // Mobile Arsenal Drawer Toggle Coordinator
+    document.addEventListener("DOMContentLoaded", () => {
+      const mobileArsenalBtn = document.getElementById("btn-mobile-arsenal");
+      const closeDrawerBtn = document.getElementById("btn-close-drawer");
+      const powerDrawer = document.getElementById("powerDrawer");
+
+      if (mobileArsenalBtn && powerDrawer) {
+        mobileArsenalBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (window.tetrisApp) {
+            window.tetrisApp.toggle_power_drawer();
+          } else {
+            powerDrawer.classList.toggle("collapsed");
+          }
+        });
+      }
+
+      if (closeDrawerBtn && powerDrawer) {
+        closeDrawerBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (window.tetrisApp) {
+            window.tetrisApp.toggle_power_drawer();
+          } else {
+            powerDrawer.classList.add("collapsed");
+          }
+        });
+      }
+
+      if (powerDrawer) {
+        powerDrawer.addEventListener("click", (e) => {
+          if (e.target === powerDrawer && !powerDrawer.classList.contains("collapsed")) {
+            if (window.tetrisApp) {
+              window.tetrisApp.toggle_power_drawer();
+            } else {
+              powerDrawer.classList.add("collapsed");
+            }
+          }
+        });
+      }
+    });
 
     window.addEventListener("DOMContentLoaded", bootEngine);
   </script>

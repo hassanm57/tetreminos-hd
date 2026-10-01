@@ -76,7 +76,7 @@ class GameApp:
             return False
         try:
             is_touch_device = js.document.documentElement.classList.contains("touch-device")
-            is_narrow = (float(js.window.innerWidth) <= 640.0)
+            is_narrow = (float(js.window.innerWidth) <= 768.0)
             return is_touch_device or is_narrow
         except Exception:
             return False
@@ -99,6 +99,9 @@ class GameApp:
         if not HAS_BROWSER_ENV:
             print("Running in desktop test mode (no browser environment).")
             return
+
+        # Expose app globally so native JavaScript touch coordinator can invoke actions directly
+        js.window.tetrisApp = self
 
         self.canvas = js.document.getElementById("gameCanvas")
         self.ctx = self.canvas.getContext("2d")
@@ -225,6 +228,8 @@ class GameApp:
             "btn-controls": lambda: self.open_controls_modal(),
             "btn-controls-close": lambda: self.close_controls_modal(),
             "btn-toggle-drawer": lambda: self.toggle_power_drawer(),
+            "btn-mobile-arsenal": lambda: self.toggle_power_drawer(),
+            "btn-close-drawer": lambda: self.toggle_power_drawer(),
             "btn-restart": lambda: self.restart_game(),
             "btn-mode": lambda: self.open_mode_modal(),
             "card-rogue": lambda: self.select_modal_mode('ROGUE'),
@@ -244,6 +249,62 @@ class GameApp:
                     return handler
                 proxy = create_proxy(make_handler(action))
                 btn.addEventListener("click", proxy)
+
+    def handle_touch_move_left(self):
+        """Called by touch controller when finger slides left."""
+        self.audio.init_context()
+        if not self.game.game_over and not self.game.is_paused:
+            self.game.move_left()
+            self.vibrate(8)
+
+    def handle_touch_move_right(self):
+        """Called by touch controller when finger slides right."""
+        self.audio.init_context()
+        if not self.game.game_over and not self.game.is_paused:
+            self.game.move_right()
+            self.vibrate(8)
+
+    def handle_touch_soft_drop(self):
+        """Called by touch controller when finger moves downward."""
+        self.audio.init_context()
+        if not self.game.game_over and not self.game.is_paused:
+            self.game.soft_drop()
+            self.audio.play_soft_drop()
+            self.vibrate(5)
+
+    def handle_touch_hard_drop(self):
+        """Called by touch controller when downward flick / swipe is detected."""
+        self.audio.init_context()
+        if not self.game.game_over and not self.game.is_paused:
+            self.game.hard_drop()
+            self.vibrate(25)
+
+    def handle_touch_rotate_cw(self):
+        """Called by touch controller when board is tapped."""
+        self.audio.init_context()
+        if self.game.game_over:
+            self.restart_game()
+            self.vibrate(20)
+            return
+        if self.game.is_paused:
+            self.game.is_paused = False
+            self.vibrate(15)
+            return
+        self.game.rotate(clockwise=True)
+        self.vibrate(12)
+
+    def handle_touch_hold(self):
+        """Called by touch controller when upward swipe or top-left HOLD box is tapped."""
+        self.audio.init_context()
+        if not self.game.game_over and not self.game.is_paused:
+            self.game.hold()
+            self.vibrate(15)
+
+    def handle_touch_pause(self):
+        """Called by touch controller when pause area is tapped."""
+        self.audio.init_context()
+        self.game.is_paused = not self.game.is_paused
+        self.vibrate(15)
 
     def setup_touch_controls(self):
         """
