@@ -609,11 +609,16 @@ body {
   font-family: 'Neuropol', sans-serif;
 }
 
-/* Mobile Touch Controls Virtual Gamepad */
+/* Mobile Touch Controls Virtual Gamepad - HIDDEN by default on PC / Desktop */
 .mobile-controls {
+  display: none !important;
+}
+
+/* ONLY display when running on an actual mobile/tablet touch device */
+html.touch-device .mobile-controls {
+  display: flex !important;
   width: 100%;
   max-width: 600px;
-  display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
@@ -794,12 +799,7 @@ body {
   box-shadow: 0 0 16px rgba(192, 132, 252, 0.75);
 }
 
-/* Hide mobile controls on large desktop screens with mouse pointers */
-@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
-  .mobile-controls {
-    display: none;
-  }
-}
+
 
 /* Responsive Scaling & Mobile Layout Polish */
 @media (max-width: 768px) {
