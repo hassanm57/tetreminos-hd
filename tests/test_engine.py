@@ -90,6 +90,20 @@ class TestTetrisEngine(unittest.TestCase):
             for dx in range(-1, 2):
                 self.assertIsNone(self.game.board[center_y + dy][center_x + dx])
 
+    def test_bomb_ability_3_block_radius(self):
+        """Bomb default radius 3 should clear 3 blocks in each direction (7x7 area)."""
+        center_x, center_y = 5, 15
+        # Fill a 7x7 block around center
+        filled_count = 0
+        for dy in range(-3, 4):
+            for dx in range(-3, 4):
+                if 0 <= center_x + dx < BOARD_WIDTH and 0 <= center_y + dy < TOTAL_HEIGHT:
+                    self.game.board[center_y + dy][center_x + dx] = {'color': '#ff4500', 'ability': ABILITY_NONE}
+                    filled_count += 1
+
+        cleared = execute_bomb(self.game.board, center_x, center_y)  # default radius=3
+        self.assertEqual(len(cleared), filled_count)
+
     def test_lightning_ability(self):
         """Lightning should clear the entire row and column."""
         lx, ly = 4, 15

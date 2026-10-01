@@ -345,7 +345,7 @@ class TetrisGame:
         if placed_ability_coord is not None and ability != ABILITY_NONE:
             ax, ay = placed_ability_coord
             if ability == ABILITY_BOMB:
-                cleared = execute_bomb(self.board, ax, ay, radius=1)
+                cleared = execute_bomb(self.board, ax, ay, radius=3)
                 self.pending_events.append({'type': 'ability_bomb', 'x': ax, 'y': ay, 'cleared': cleared})
             elif ability == ABILITY_LIGHTNING:
                 cleared = execute_lightning(self.board, ax, ay)

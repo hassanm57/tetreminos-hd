@@ -29,11 +29,11 @@ def assign_random_ability(chance=0.25):
     return random.choice(abilities)
 
 
-def execute_bomb(board, bomb_x, bomb_y, radius=1):
+def execute_bomb(board, bomb_x, bomb_y, radius=3):
     """
     💣 Bomb block: Detonates upon locking.
-    Clears all blocks within 'radius' (default 1 = 3x3 square).
-    Returns the list of (x, y) coordinates that were blown up.
+    Clears all blocks within 'radius' (default 3 = 3 blocks in each direction, 7x7 square).
+    Returns the list of (x, y, cell) tuples that were blown up.
     """
     destroyed_cells = []
     

@@ -180,10 +180,12 @@ class GameApp:
                 self.game.move_right()
         elif key in ["ArrowUp", "w", "W", "x", "X"]:
             event.preventDefault()
-            self.game.rotate(clockwise=True)
+            if not getattr(event, 'repeat', False):
+                self.game.rotate(clockwise=True)
         elif key in ["z", "Z", "Control"]:
             event.preventDefault()
-            self.game.rotate(clockwise=False)
+            if not getattr(event, 'repeat', False):
+                self.game.rotate(clockwise=False)
         elif key in ["ArrowDown", "s", "S"]:
             event.preventDefault()
             if not self.down_held:
@@ -301,6 +303,20 @@ class GameApp:
         self.game.rotate(clockwise=True)
         self.vibrate(12)
 
+    def handle_touch_rotate_ccw(self):
+        """Called by touch controller when left half of matrix is tapped -> Counter-Clockwise (CCW)."""
+        self.audio.init_context()
+        if self.game.game_over:
+            self.restart_game()
+            self.vibrate(20)
+            return
+        if self.game.is_paused:
+            self.game.is_paused = False
+            self.vibrate(15)
+            return
+        self.game.rotate(clockwise=False)
+        self.vibrate(12)
+
     def handle_touch_hold(self):
         """Called by touch controller when upward swipe or top-left HOLD box is tapped."""
         self.audio.init_context()
@@ -316,167 +332,10 @@ class GameApp:
 
     def setup_touch_controls(self):
         """
-        Sets up intuitive 1:1 mobile touch gestures matching official App Store Tetris:
-        - Slide finger left / right: Piece moves column-by-column tracking your finger across the board.
-        - Move finger down a little: Soft drop (speeds up descent smoothly with finger).
-        - Swipe / flick down quickly: Hard drop slam.
-        - Tap screen: Rotate piece Clockwise (or restart on Game Over).
-        - Tap top-left [HOLD] or swipe up: Hold piece.
+        Touch events are coordinated by the native high-responsiveness touch engine in index.html,
+        which directly dispatches actions to window.tetrisApp with zero passive listener friction.
         """
-        if not HAS_BROWSER_ENV or not self.canvas:
-            return
-
-        self.touch_start_x = 0.0
-        self.touch_start_y = 0.0
-        self.touch_last_x = 0.0
-        self.touch_last_y = 0.0
-        self.touch_start_time = 0.0
-        self.touch_accum_x = 0.0
-        self.touch_accum_y = 0.0
-        self.touch_has_moved = False
-        self.touch_hard_dropped = False
-
-        def on_canvas_touchstart(evt):
-            evt.preventDefault()
-            self.audio.init_context()
-
-            if len(evt.touches) == 0:
-                return
-
-            touch = evt.touches[0]
-            self.touch_start_x = float(touch.clientX)
-            self.touch_start_y = float(touch.clientY)
-            self.touch_last_x = float(touch.clientX)
-            self.touch_last_y = float(touch.clientY)
-            self.touch_start_time = time.time()
-            self.touch_accum_x = 0.0
-            self.touch_accum_y = 0.0
-            self.touch_has_moved = False
-            self.touch_hard_dropped = False
-
-        def on_canvas_touchmove(evt):
-            evt.preventDefault()
-            if self.touch_hard_dropped or len(evt.touches) == 0:
-                return
-
-            touch = evt.touches[0]
-            cur_x = float(touch.clientX)
-            cur_y = float(touch.clientY)
-
-            dx = cur_x - self.touch_last_x
-            dy = cur_y - self.touch_last_y
-            self.touch_last_x = cur_x
-            self.touch_last_y = cur_y
-
-            # Fast downward flick check for instant hard drop during movement
-            total_dy = cur_y - self.touch_start_y
-            elapsed = time.time() - self.touch_start_time
-            if total_dy > 46.0 and elapsed < 0.20 and dy > 16.0:
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.hard_drop()
-                    self.vibrate(25)
-                self.touch_hard_dropped = True
-                self.touch_has_moved = True
-                return
-
-            # Accumulate movement deltas
-            self.touch_accum_x += dx
-            self.touch_accum_y += dy
-
-            # Responsive cell step in screen coordinates (~20-26px)
-            rect = self.canvas.getBoundingClientRect()
-            step_x = max(18.0, min(32.0, float(rect.width) / 12.0))
-            step_y = max(16.0, min(28.0, float(rect.height) / 28.0))
-
-            # Horizontal cell shifts (tracking finger column-by-column)
-            while self.touch_accum_x >= step_x:
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.move_right()
-                    self.vibrate(8)
-                self.touch_accum_x -= step_x
-                self.touch_has_moved = True
-
-            while self.touch_accum_x <= -step_x:
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.move_left()
-                    self.vibrate(8)
-                self.touch_accum_x += step_x
-                self.touch_has_moved = True
-
-            # Vertical soft drop (moving finger down a little speeds up descent)
-            while self.touch_accum_y >= step_y:
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.soft_drop()
-                    self.audio.play_soft_drop()
-                    self.vibrate(5)
-                self.touch_accum_y -= step_y
-                self.touch_has_moved = True
-
-        def on_canvas_touchend(evt):
-            evt.preventDefault()
-            now = time.time()
-            dt = now - self.touch_start_time
-            total_dx = self.touch_last_x - self.touch_start_x
-            total_dy = self.touch_last_y - self.touch_start_y
-
-            # If already hard dropped during drag, nothing more to do
-            if self.touch_hard_dropped:
-                return
-
-            # 1. Downward swipe flick -> Hard drop
-            if total_dy > 40.0 and (total_dy / max(0.01, dt) > 230.0 or dt < 0.25):
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.hard_drop()
-                    self.vibrate(25)
-                return
-
-            # 2. Swipe Up -> Hold piece
-            if total_dy < -38.0 and dt < 0.35 and abs(total_dx) < abs(total_dy) * 1.5:
-                if not self.game.game_over and not self.game.is_paused:
-                    self.game.hold()
-                    self.vibrate(15)
-                return
-
-            # 3. Clean Tap (no significant drag, fast release)
-            if not self.touch_has_moved and abs(total_dx) < 18.0 and abs(total_dy) < 18.0 and dt < 0.28:
-                rect = self.canvas.getBoundingClientRect()
-                canvas_x = (self.touch_last_x - float(rect.left)) * (float(self.canvas.width) / max(1.0, float(rect.width)))
-                canvas_y = (self.touch_last_y - float(rect.top)) * (float(self.canvas.height) / max(1.0, float(rect.height)))
-
-                # If game over -> tap anywhere restarts
-                if self.game.game_over:
-                    self.restart_game()
-                    self.vibrate(20)
-                    return
-
-                # If paused -> tap anywhere resumes
-                if self.game.is_paused:
-                    self.game.is_paused = False
-                    self.vibrate(15)
-                    return
-
-                is_mobile = (self.canvas.width < 550)
-
-                # Tap on top-left HOLD box
-                if is_mobile and canvas_y <= 76.0 and canvas_x <= 76.0:
-                    self.game.hold()
-                    self.vibrate(15)
-                    return
-
-                # Tap on top-center / pause area
-                if is_mobile and canvas_y <= 76.0 and (self.canvas.width - 110.0 <= canvas_x <= self.canvas.width - 70.0):
-                    self.game.is_paused = True
-                    self.vibrate(15)
-                    return
-
-                # Standard tap anywhere on matrix -> Rotate Clockwise (CW)
-                self.game.rotate(clockwise=True)
-                self.vibrate(12)
-
-        self.canvas.addEventListener("touchstart", create_proxy(on_canvas_touchstart))
-        self.canvas.addEventListener("touchmove", create_proxy(on_canvas_touchmove))
-        self.canvas.addEventListener("touchend", create_proxy(on_canvas_touchend))
-        self.canvas.addEventListener("touchcancel", create_proxy(on_canvas_touchend))
+        pass
 
     def vibrate(self, duration_ms):
         """Haptic feedback on mobile if device supports it."""

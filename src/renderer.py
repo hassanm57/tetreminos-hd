@@ -55,7 +55,7 @@ class Particle:
     def is_alive(self):
         return self.life > 0.0
 
-    def draw(self, ctx, offset_x, offset_y):
+    def draw(self, ctx, offset_x, offset_y, is_mobile=False):
         if not self.is_alive():
             return
         
@@ -68,16 +68,18 @@ class Particle:
 
         if self.style == 'spark':
             ctx.fillStyle = self.color
-            ctx.shadowColor = self.color
-            ctx.shadowBlur = 8
+            if not is_mobile:
+                ctx.shadowColor = self.color
+                ctx.shadowBlur = 8
             ctx.beginPath()
             ctx.arc(px, py, max(1.0, self.size * alpha), 0, math.pi * 2)
             ctx.fill()
 
         elif self.style == 'flame':
             ctx.fillStyle = self.color
-            ctx.shadowColor = self.color
-            ctx.shadowBlur = 14
+            if not is_mobile:
+                ctx.shadowColor = self.color
+                ctx.shadowBlur = 14
             ctx.beginPath()
             ctx.arc(px, py, self.size, 0, math.pi * 2)
             ctx.fill()
@@ -86,8 +88,9 @@ class Particle:
             ctx.translate(px, py)
             ctx.rotate(self.angle)
             ctx.fillStyle = self.color
-            ctx.shadowColor = '#38bdf8'
-            ctx.shadowBlur = 8
+            if not is_mobile:
+                ctx.shadowColor = '#38bdf8'
+                ctx.shadowBlur = 8
             sz = self.size
             ctx.beginPath()
             ctx.moveTo(0, -sz)
@@ -101,8 +104,9 @@ class Particle:
             jx = px + random.uniform(-3, 3)
             jy = py + random.uniform(-3, 3)
             ctx.strokeStyle = self.color
-            ctx.shadowColor = self.color
-            ctx.shadowBlur = 10
+            if not is_mobile:
+                ctx.shadowColor = self.color
+                ctx.shadowBlur = 10
             ctx.lineWidth = 2
             ctx.beginPath()
             ctx.moveTo(px, py)
@@ -557,6 +561,7 @@ class CanvasRenderer:
     particle bursts, ability icons, HUD, and screen shake.
     """
     def __init__(self):
+        self.is_mobile = False
         self.particles = []
         self.shockwaves = []
         self.lightning_effects = []
@@ -637,27 +642,30 @@ class CanvasRenderer:
     # High-impact, pleasing power ability triggers
 
     def trigger_bomb_effect(self, center_x, center_y, cleared_count=9):
-        """💣 Bomb Mino: Fiery expanding fireball blast, shockwave ring, embers & smoke."""
+        """💣 Bomb Mino: Fiery expanding fireball blast, shockwave ring, embers & smoke (3-block radius)."""
         cx = center_x * BLOCK_SIZE + (BLOCK_SIZE / 2)
         cy = (center_y - HIDDEN_ROWS) * BLOCK_SIZE + (BLOCK_SIZE / 2)
         
-        self.trigger_shake(magnitude=14.0, duration=0.45)
+        self.trigger_shake(magnitude=14.0 if not self.is_mobile else 7.0, duration=0.45)
         self.screen_flashes.append(ScreenFlash(color='#ff4500', initial_alpha=0.35, duration=0.14))
-        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=140, duration=0.5, color_outer='#ff3700', color_inner='#ffe600', ring_width=5.5))
+        # 3 blocks in each direction = ~180px radius blast
+        self.shockwaves.append(ShockwaveEffect(cx, cy, max_radius=180, duration=0.52, color_outer='#ff3700', color_inner='#ffe600', ring_width=5.5))
         
-        # 1. Blooming flame particles
+        # 1. Blooming flame particles (streamlined on mobile for smooth 60fps)
         flame_colors = ['#ffffff', '#ffeb3b', '#ff9800', '#ff5722', '#f44336']
-        for _ in range(35):
-            spd = random.uniform(1.5, 4.5)
+        flame_count = 10 if self.is_mobile else 35
+        for _ in range(flame_count):
+            spd = random.uniform(1.8, 5.0)
             ang = random.uniform(0, math.pi * 2)
             vx = math.cos(ang) * spd
             vy = math.sin(ang) * spd - 0.5
             col = random.choice(flame_colors)
             self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='flame', size=random.uniform(5.0, 9.0), life=0.65, decay=0.035, gravity=-0.08))
 
-        # 2. Fast fiery sparks
+        # 2. Fast fiery sparks (streamlined on mobile)
         spark_colors = ['#ffffff', '#ffeb3b', '#ff7043']
-        for _ in range(40):
+        spark_count = 12 if self.is_mobile else 40
+        for _ in range(spark_count):
             spd = random.uniform(4.0, 9.0)
             ang = random.uniform(0, math.pi * 2)
             vx = math.cos(ang) * spd
@@ -666,7 +674,8 @@ class CanvasRenderer:
             self.particles.append(Particle(cx, cy, col, vx=vx, vy=vy, style='spark', size=random.uniform(2.5, 4.5), life=0.8, decay=0.03, gravity=0.18))
 
         # 3. Drifting smoke puffs
-        for _ in range(16):
+        smoke_count = 4 if self.is_mobile else 16
+        for _ in range(smoke_count):
             spd = random.uniform(0.6, 2.0)
             ang = random.uniform(0, math.pi * 2)
             vx = math.cos(ang) * spd
@@ -674,8 +683,8 @@ class CanvasRenderer:
             self.particles.append(Particle(cx, cy, '#4b5563', vx=vx, vy=vy, style='smoke', size=random.uniform(8.0, 14.0), life=0.9, decay=0.025, gravity=-0.05))
 
         # 4. Floating badge announcement
-        sub = f"-{cleared_count} BLOCKS" if cleared_count else "3x3 CLEAR"
-        self.floating_badges.append(FloatingBadge("DETONATION!", sub, icon='💣', x=cx, y=cy - 12, color='#ff4500'))
+        sub = f"-{cleared_count} BLOCKS" if cleared_count else "3-BLOCK RADIUS"
+        self.floating_badges.append(FloatingBadge("MEGA DETONATION!", sub, icon='💣', x=cx, y=cy - 12, color='#ff4500'))
 
     def trigger_lightning_effect(self, bolt_x, bolt_y, cleared_count=19):
         """⚡ Lightning Mino: Dual cross laser, branching electric arcs, cyan sparks."""
@@ -812,6 +821,8 @@ class CanvasRenderer:
         for p in self.particles:
             p.update()
         self.particles = [p for p in self.particles if p.is_alive()]
+        if self.is_mobile and len(self.particles) > 25:
+            self.particles = self.particles[-25:]
 
         for s in self.shockwaves:
             s.update(delta_time)
@@ -850,6 +861,7 @@ class CanvasRenderer:
         canvas_w = ctx.canvas.width if hasattr(ctx, 'canvas') and ctx.canvas else 750
         canvas_h = ctx.canvas.height if hasattr(ctx, 'canvas') and ctx.canvas else 720
         is_mobile = (canvas_w < 550)
+        self.is_mobile = is_mobile
 
         board_pixel_w = BOARD_WIDTH * BLOCK_SIZE   # 300
         board_pixel_h = BOARD_HEIGHT * BLOCK_SIZE  # 600
@@ -959,7 +971,7 @@ class CanvasRenderer:
 
         # 6.4 Enhanced physics particles (sparks, flames, ice crystals, electric arcs, rock debris)
         for p in self.particles:
-            p.draw(ctx, offset_x, offset_y)
+            p.draw(ctx, offset_x, offset_y, is_mobile=is_mobile)
 
         # 6.5 Frost ambient aura while game is frozen
         if game.freeze_timer > 0.0:
@@ -1051,6 +1063,7 @@ class CanvasRenderer:
         """
         Draws a block on the grid.
         Power blocks are completely unique with high-contrast energy cores and distinct glowing rings!
+        On mobile, shadowBlur is bypassed to deliver 60 FPS performance.
         """
         ctx.save()
 
@@ -1065,8 +1078,9 @@ class CanvasRenderer:
 
             # 2. Glowing animated outer neon halo
             ctx.strokeStyle = ability_color
-            ctx.shadowColor = ability_color
-            ctx.shadowBlur = int(8 + 8 * pulse)
+            if not self.is_mobile:
+                ctx.shadowColor = ability_color
+                ctx.shadowBlur = int(8 + 8 * pulse)
             ctx.lineWidth = 2.5
             ctx.strokeRect(x + 1.5, y + 1.5, BLOCK_SIZE - 3, BLOCK_SIZE - 3)
 
@@ -1082,8 +1096,9 @@ class CanvasRenderer:
             ctx.stroke()
 
             # 4. CRISP, 100% OPACITY, BOLD ICON
-            ctx.shadowBlur = 4
-            ctx.shadowColor = '#ffffff'
+            if not self.is_mobile:
+                ctx.shadowBlur = 4
+                ctx.shadowColor = '#ffffff'
             ctx.font = 'bold 18px sans-serif'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
@@ -1098,10 +1113,12 @@ class CanvasRenderer:
         else:
             # Standard structural block
             ctx.fillStyle = color
-            ctx.shadowColor = color
-            ctx.shadowBlur = 6
+            if not self.is_mobile:
+                ctx.shadowColor = color
+                ctx.shadowBlur = 6
             ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
-            ctx.shadowBlur = 0
+            if not self.is_mobile:
+                ctx.shadowBlur = 0
 
             # Subtle inner highlight
             ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'
@@ -1111,11 +1128,16 @@ class CanvasRenderer:
         ctx.restore()
 
     def draw_ghost_block(self, ctx, x, y, color):
-        """Draws a faint holographic outline representing where the piece will land."""
+        """Draws a bright, prominent holographic guide representing where the piece will land."""
         ctx.save()
+        # Luminous semi-transparent inner tint for high visibility
+        ctx.fillStyle = color
+        ctx.globalAlpha = 0.22
+        ctx.fillRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4)
+        # Crisp, vivid outer outline
         ctx.strokeStyle = color
-        ctx.globalAlpha = 0.35
-        ctx.lineWidth = 1.5
+        ctx.globalAlpha = 0.88
+        ctx.lineWidth = 2.0
         ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4)
         ctx.restore()
 
