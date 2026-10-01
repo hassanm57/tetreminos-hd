@@ -10,27 +10,53 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=5.0">
+  <link rel="stylesheet" href="style.css?v=6.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/neuropol" rel="stylesheet">
+  <style>
+    /* Critical Inline CSS: Guarantee mobile title & desktop header NEVER display on mobile screens */
+    .touch-device .desktop-only,
+    .touch-device .cyber-header,
+    .touch-device .cyber-footer {
+      display: none !important;
+    }
+    @media (max-width: 900px), (pointer: coarse), (hover: none) {
+      .desktop-only,
+      .cyber-header,
+      .cyber-footer {
+        display: none !important;
+      }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
   <script>
-    // Strictly detect actual handheld mobile/tablet devices so gamepad NEVER renders on desktop PC
+    // Strictly detect actual handheld mobile/tablet devices or portrait screens
     (function() {
       var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 2 && 'ontouchend' in document);
+        || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 2 && 'ontouchend' in document)
+        || ('ontouchstart' in window)
+        || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+        || (window.innerWidth <= 900);
       if (isMobile) {
         document.documentElement.classList.add('touch-device');
+        // Preset canvas resolution immediately to mobile portrait before Pyodide initialization
+        document.addEventListener('DOMContentLoaded', function() {
+          var c = document.getElementById('gameCanvas');
+          if (c) {
+            c.width = 360;
+            c.height = 720;
+          }
+        });
       }
     })();
   </script>
 </head>
 <body>
   <div class="game-wrapper">
-    <!-- Clean Dark Header -->
-    <header class="cyber-header">
+    <!-- Clean Dark Header (Desktop Only) -->
+    <header class="cyber-header desktop-only">
       <div class="logo-container">
         <h1 class="logo-text">TETREMINOS HD</h1>
         <span class="subtitle">TACTICAL POLYOMINO PROTOCOL</span>
@@ -151,8 +177,8 @@
       </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="cyber-footer">
+    <!-- Footer (Desktop Only) -->
+    <footer class="cyber-footer desktop-only">
       <span>Made by <strong>hassanm57</strong></span>
     </footer>
   </div>

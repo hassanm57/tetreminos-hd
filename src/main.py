@@ -71,13 +71,21 @@ class GameApp:
             pass
 
     def is_mobile_viewport(self):
-        """Detects if running on mobile device or narrow mobile portrait viewport."""
+        """Detects if running on mobile device, touch device, or portrait viewport."""
         if not HAS_BROWSER_ENV:
             return False
         try:
             is_touch_device = js.document.documentElement.classList.contains("touch-device")
-            is_narrow = (float(js.window.innerWidth) <= 768.0)
-            return is_touch_device or is_narrow
+            w = float(js.window.innerWidth)
+            h = float(js.window.innerHeight)
+            is_narrow = (w <= 900.0)
+            is_portrait = (h >= w)
+            is_coarse = False
+            if hasattr(js.window, "matchMedia"):
+                m = js.window.matchMedia("(pointer: coarse)")
+                if m and m.matches:
+                    is_coarse = True
+            return is_touch_device or is_narrow or (is_coarse and is_portrait)
         except Exception:
             return False
 
