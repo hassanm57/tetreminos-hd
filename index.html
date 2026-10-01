@@ -102,35 +102,35 @@
           <div class="controls-grid">
             <div class="control-row">
               <span class="control-label">Move Left / Right</span>
-              <span class="control-keys"><kbd>←</kbd> <kbd>→</kbd> or <kbd>◀</kbd> <kbd>▶</kbd> / Swipe</span>
+              <span class="control-keys"><kbd>←</kbd> <kbd>→</kbd> / Slide Finger</span>
             </div>
             <div class="control-row">
               <span class="control-label">Rotate Clockwise (SRS)</span>
-              <span class="control-keys"><kbd>↑</kbd> <kbd>W</kbd> or <kbd>↻ CW</kbd> / Tap Board</span>
+              <span class="control-keys"><kbd>↑</kbd> <kbd>W</kbd> / Tap Screen</span>
             </div>
             <div class="control-row">
               <span class="control-label">Rotate Counter-Clockwise</span>
-              <span class="control-keys"><kbd>Z</kbd> or <kbd>↺ CCW</kbd></span>
+              <span class="control-keys"><kbd>Z</kbd></span>
             </div>
             <div class="control-row">
-              <span class="control-label">Soft Drop</span>
-              <span class="control-keys"><kbd>↓</kbd> <kbd>S</kbd> or <kbd>▼ DROP</kbd> / Drag Down</span>
+              <span class="control-label">Soft Drop (Speed Up)</span>
+              <span class="control-keys"><kbd>↓</kbd> <kbd>S</kbd> / Move Finger Down</span>
             </div>
             <div class="control-row">
               <span class="control-label">Hard Drop</span>
-              <span class="control-keys"><kbd>Space</kbd> or <kbd>⚡ SLAM</kbd> / Flick Down</span>
+              <span class="control-keys"><kbd>Space</kbd> / Swipe Down</span>
             </div>
             <div class="control-row">
               <span class="control-label">Hold Piece</span>
-              <span class="control-keys"><kbd>C</kbd> or <kbd>📦 HOLD</kbd> / Swipe Up</span>
+              <span class="control-keys"><kbd>C</kbd> / Tap [HOLD] or Swipe Up</span>
             </div>
             <div class="control-row">
               <span class="control-label">Pause / Resume</span>
-              <span class="control-keys"><kbd>P</kbd> or <kbd>⏸ PAUSE</kbd></span>
+              <span class="control-keys"><kbd>P</kbd></span>
             </div>
             <div class="control-row">
               <span class="control-label">Reboot Run</span>
-              <span class="control-keys"><kbd>R</kbd> or <kbd>🔄 REBOOT</kbd></span>
+              <span class="control-keys"><kbd>R</kbd> / Tap on Game Over</span>
             </div>
             <div class="control-row">
               <span class="control-label">Select Relic (Rogue)</span>
@@ -144,85 +144,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Mobile Touch Controls Mount (Only populated dynamically on handheld mobile/tablet devices) -->
-    <div id="mobileControlsMount"></div>
-
-    <template id="mobileControlsTemplate">
-      <div id="mobileControls" class="mobile-controls">
-        <!-- Quick Utility Row -->
-        <div class="mobile-utility-row">
-          <button id="touch-hold" class="touch-pill-btn" aria-label="Hold Piece">
-            <span class="touch-icon">📦</span>
-            <span class="touch-text">HOLD</span>
-          </button>
-          <button id="touch-pause" class="touch-pill-btn" aria-label="Pause Game">
-            <span class="touch-icon">⏸</span>
-            <span class="touch-text">PAUSE</span>
-          </button>
-          <button id="touch-intel" class="touch-pill-btn" aria-label="Power Arsenal Intel">
-            <span class="touch-icon">⚡</span>
-            <span class="touch-text">ARSENAL</span>
-          </button>
-          <button id="touch-restart" class="touch-pill-btn touch-restart-btn" aria-label="Reboot Game">
-            <span class="touch-icon">🔄</span>
-            <span class="touch-text">REBOOT</span>
-          </button>
-        </div>
-
-        <!-- Main Gamepad Touch Arena -->
-        <div class="mobile-touch-arena">
-          <!-- Left Side: D-Pad Navigation -->
-          <div class="touch-dpad-grid">
-            <button id="touch-left" class="touch-game-btn dpad-btn dpad-left" aria-label="Move Left">
-              <span class="touch-glyph">◀</span>
-            </button>
-            <button id="touch-down" class="touch-game-btn dpad-btn dpad-down" aria-label="Soft Drop">
-              <span class="touch-glyph">▼</span>
-              <span class="touch-sublabel">DROP</span>
-            </button>
-            <button id="touch-right" class="touch-game-btn dpad-btn dpad-right" aria-label="Move Right">
-              <span class="touch-glyph">▶</span>
-            </button>
-          </div>
-
-          <!-- Center: Hard Drop / Slam Button -->
-          <div class="touch-center-slot">
-            <button id="touch-hard-drop" class="touch-game-btn slam-btn" aria-label="Hard Drop Slam">
-              <span class="touch-glyph">⚡</span>
-              <span class="touch-sublabel">SLAM</span>
-            </button>
-          </div>
-
-          <!-- Right Side: Rotations (CCW & CW) -->
-          <div class="touch-action-grid">
-            <button id="touch-rot-ccw" class="touch-game-btn rot-btn rot-ccw" aria-label="Rotate Counter-Clockwise">
-              <span class="touch-glyph">↺</span>
-              <span class="touch-sublabel">CCW</span>
-            </button>
-            <button id="touch-rot-cw" class="touch-game-btn rot-btn rot-cw" aria-label="Rotate Clockwise">
-              <span class="touch-glyph">↻</span>
-              <span class="touch-sublabel">CW</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </template>
-    <script>
-      // Strict handheld mobile device activation: Never display virtual gamepad on desktop PC
-      (function() {
-        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-          || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 2 && 'ontouchend' in document);
-        if (isMobile) {
-          document.documentElement.classList.add("touch-device");
-          var tpl = document.getElementById("mobileControlsTemplate");
-          var mount = document.getElementById("mobileControlsMount");
-          if (tpl && mount && 'content' in tpl) {
-            mount.appendChild(tpl.content.cloneNode(true));
-          }
-        }
-      })();
-    </script>
 
     <!-- Footer -->
     <footer class="cyber-footer">

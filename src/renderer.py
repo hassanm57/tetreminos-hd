@@ -845,12 +845,21 @@ class CanvasRenderer:
     def render(self, ctx, game, sector_mgr=None, game_mode='CLASSIC', high_score=0):
         """
         Main drawing function called once per animation frame (60 FPS).
+        Dynamically adapts between Mobile Portrait (360x720) and Desktop (750x720).
         """
-        # Board dimensions on canvas
-        board_pixel_w = BOARD_WIDTH * BLOCK_SIZE
-        board_pixel_h = BOARD_HEIGHT * BLOCK_SIZE
-        offset_x = 180  # Left margin for Hold piece panel
-        offset_y = 60   # Top margin
+        canvas_w = ctx.canvas.width if hasattr(ctx, 'canvas') and ctx.canvas else 750
+        canvas_h = ctx.canvas.height if hasattr(ctx, 'canvas') and ctx.canvas else 720
+        is_mobile = (canvas_w < 550)
+
+        board_pixel_w = BOARD_WIDTH * BLOCK_SIZE   # 300
+        board_pixel_h = BOARD_HEIGHT * BLOCK_SIZE  # 600
+
+        if is_mobile:
+            offset_x = int((canvas_w - board_pixel_w) / 2)  # 30px on 360w
+            offset_y = 78
+        else:
+            offset_x = 180  # Left margin for Hold piece panel on desktop
+            offset_y = 60   # Top margin on desktop
 
         # Apply screen shake if active
         ctx.save()
@@ -861,7 +870,7 @@ class CanvasRenderer:
 
         # 1. Clear background - Fully dark
         ctx.fillStyle = '#000000'
-        ctx.fillRect(0, 0, 750, 720)
+        ctx.fillRect(0, 0, canvas_w, canvas_h)
 
         # 2. Draw Main Matrix Background & Grid Lines
         ctx.fillStyle = '#050505'
@@ -895,8 +904,8 @@ class CanvasRenderer:
         ctx.lineWidth = 1.5
         ctx.strokeRect(offset_x, offset_y, board_pixel_w, board_pixel_h)
 
-        # 2.5. Alert banner if next piece is an upcoming Power Piece!
-        if len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE:
+        # 2.5. Alert banner if next piece is an upcoming Power Piece (Desktop only)
+        if not is_mobile and len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE:
             self.draw_power_alert_banner(ctx, game.next_queue[0].ability, offset_x, offset_y - 48, board_pixel_w)
 
         # 3. Draw Locked Blocks on the Board
@@ -960,18 +969,24 @@ class CanvasRenderer:
         for b in self.floating_badges:
             b.draw(ctx, offset_x, offset_y)
 
-        # 7. Draw UI Panels: Hold Queue (Left) & Next Queue (Right)
-        self.draw_hold_panel(ctx, game, offset_x - 150, offset_y)
-        self.draw_next_panel(ctx, game, offset_x + board_pixel_w + 30, offset_y)
+        # 7. UI Panels: Mobile Mode vs Desktop Side Panels
+        if is_mobile:
+            self.draw_mobile_top_bar(ctx, game, high_score, canvas_w, bar_h=74)
+            self.draw_mobile_bottom_bar(ctx, game, sector_mgr, game_mode, canvas_w, y_start=682)
+        else:
+            self.draw_hold_panel(ctx, game, offset_x - 150, offset_y)
+            self.draw_next_panel(ctx, game, offset_x + board_pixel_w + 30, offset_y)
+            self.draw_hud(ctx, game, sector_mgr, game_mode, offset_x - 150, offset_y + 175, high_score)
 
-        # 8. Draw HUD: High Score, Score, Level, Lines, Sector info
-        self.draw_hud(ctx, game, sector_mgr, game_mode, offset_x - 150, offset_y + 175, high_score)
-
-        # 9. Game Over or Pause Overlay
+        # 8. Game Over or Pause Overlay
         if game.game_over:
-            self.draw_banner(ctx, "SYSTEM CORRUPTED", f"SCORE: {game.score} // BEST: {high_score}", '#ff0055')
+            sub = f"SCORE: {game.score} // BEST: {high_score}"
+            if is_mobile:
+                sub += " // TAP TO RESTART"
+            self.draw_banner(ctx, "SYSTEM CORRUPTED", sub, '#ff0055', canvas_w, canvas_h)
         elif game.is_paused:
-            self.draw_banner(ctx, "SYSTEM PAUSED", "PRESS P TO RESUME", '#00f0f0')
+            sub = "TAP TO RESUME" if is_mobile else "PRESS P TO RESUME"
+            self.draw_banner(ctx, "SYSTEM PAUSED", sub, '#00f0f0', canvas_w, canvas_h)
 
         ctx.restore()
 
@@ -1167,9 +1182,8 @@ class CanvasRenderer:
 
         ctx.restore()
 
-    def draw_mini_piece(self, ctx, piece, base_x, base_y):
+    def draw_mini_piece(self, ctx, piece, base_x, base_y, mini_size=18):
         """Draws a scaled-down 4-block piece for Next and Hold previews with clear power icons."""
-        mini_size = 18
         shape_offsets = TETROMINO_SHAPES[piece.shape][0]
         has_ability = (piece.ability != ABILITY_NONE)
 
@@ -1193,7 +1207,8 @@ class CanvasRenderer:
                 ctx.strokeRect(mx + 0.5, my + 0.5, mini_size - 2, mini_size - 2)
                 
                 # Crisp bold icon
-                ctx.font = 'bold 12px sans-serif'
+                icon_sz = 10 if mini_size < 15 else 12
+                ctx.font = f'bold {icon_sz}px sans-serif'
                 ctx.textAlign = 'center'
                 ctx.textBaseline = 'middle'
                 ctx.fillText(info.get('symbol', '⚡'), mx + mini_size / 2, my + mini_size / 2)
@@ -1201,6 +1216,147 @@ class CanvasRenderer:
             else:
                 ctx.fillStyle = piece.color
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
+
+    def draw_mobile_top_bar(self, ctx, game, high_score, canvas_w, bar_h=74):
+        """Renders compact top bar for mobile portrait view: Hold (left), HUD (center), Next (right)."""
+        ctx.save()
+        # Pitch-black top header with subtle neon border line
+        ctx.fillStyle = '#06070a'
+        ctx.fillRect(0, 0, canvas_w, bar_h)
+        ctx.strokeStyle = '#1a1f2c'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, bar_h)
+        ctx.lineTo(canvas_w, bar_h)
+        ctx.stroke()
+
+        # 1. HOLD Box (Top-Left: x=8, y=6, w=60, h=62)
+        hx, hy, hw, hh = 8, 6, 60, 62
+        ctx.fillStyle = '#0c0e14'
+        ctx.fillRect(hx, hy, hw, hh)
+        hold_active = (game.hold_piece and game.can_hold)
+        ctx.strokeStyle = '#00f0f0' if hold_active else '#252a36'
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(hx, hy, hw, hh)
+
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = 'bold 8.5px "Neuropol", "Orbitron", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText("HOLD", hx + hw / 2, hy + 13)
+
+        if game.hold_piece:
+            alpha = 1.0 if game.can_hold else 0.4
+            ctx.globalAlpha = alpha
+            self.draw_mini_piece(ctx, game.hold_piece, hx + 8, hy + 20, mini_size=11)
+            ctx.globalAlpha = 1.0
+        else:
+            ctx.fillStyle = '#334155'
+            ctx.font = '7.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillText("[SWIPE ↑]", hx + hw / 2, hy + 38)
+
+        # 2. NEXT Box (Top-Right: x=canvas_w - 68, y=6, w=60, h=62)
+        nx, ny, nw, nh = canvas_w - 68, 6, 60, 62
+        ctx.fillStyle = '#0c0e14'
+        ctx.fillRect(nx, ny, nw, nh)
+
+        has_power_next = (len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE)
+        if has_power_next:
+            info = ABILITY_INFO.get(game.next_queue[0].ability, {})
+            p_color = info.get('color', '#ff0055')
+            ctx.strokeStyle = p_color
+            ctx.shadowColor = p_color
+            ctx.shadowBlur = 8
+            ctx.lineWidth = 1.5
+        else:
+            ctx.strokeStyle = '#252a36'
+            ctx.lineWidth = 1.2
+            ctx.shadowBlur = 0
+
+        ctx.strokeRect(nx, ny, nw, nh)
+        ctx.shadowBlur = 0
+
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = 'bold 8.5px "Neuropol", "Orbitron", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText("NEXT", nx + nw / 2, ny + 13)
+
+        if len(game.next_queue) > 0:
+            self.draw_mini_piece(ctx, game.next_queue[0], nx + 8, ny + 20, mini_size=11)
+
+        # 3. Center HUD: High Score, Score, Level & Lines
+        mid_x = canvas_w / 2.0
+
+        # High Score (Gold)
+        ctx.textAlign = 'center'
+        ctx.fillStyle = '#ffb703'
+        ctx.shadowColor = '#ffb703'
+        ctx.shadowBlur = 4
+        ctx.font = 'bold 9px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillText(f"HIGH: {high_score}", mid_x, 15)
+        ctx.shadowBlur = 0
+
+        # Current Score (Large White)
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 19px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillText(str(game.score), mid_x, 37)
+
+        # Level & Lines
+        ctx.font = 'bold 9.5px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillStyle = '#00ff66'
+        ctx.fillText(f"LVL {game.level}", mid_x - 34, 57)
+        ctx.fillStyle = '#ffe600'
+        ctx.fillText(f"LINES {game.lines_cleared}", mid_x + 34, 57)
+
+        # Tactical Power piece upcoming banner indicator
+        if has_power_next:
+            info = ABILITY_INFO.get(game.next_queue[0].ability, {})
+            ctx.fillStyle = info.get('color', '#ff0055')
+            ctx.font = 'bold 8px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillText(f"⚡ INCOMING: {info.get('name', '').upper()}", mid_x, 69)
+
+        ctx.restore()
+
+    def draw_mobile_bottom_bar(self, ctx, game, sector_mgr, game_mode, canvas_w, y_start=682):
+        """Renders subtle status bar at the bottom of mobile screen."""
+        ctx.save()
+        mid_x = canvas_w / 2.0
+
+        if game.freeze_timer > 0.0:
+            ctx.fillStyle = '#38bdf8'
+            ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText(f"🧊 TIME STASIS: {game.freeze_timer:.1f}s", mid_x, y_start + 20)
+        elif game.combo > 0:
+            ctx.fillStyle = '#ff00ff'
+            ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText(f"⚡ COMBO x{game.combo}!", mid_x, y_start + 20)
+        elif game_mode == 'ROGUE' and sector_mgr:
+            sec = sector_mgr.get_current_sector()
+            ctx.fillStyle = '#ff0055'
+            ctx.font = 'bold 9.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText(f"SECTOR {sec['sector']}/5", mid_x - 60, y_start + 20)
+
+            # Progress bar
+            progress = min(1.0, sector_mgr.sector_lines_cleared / max(1, sec['lines_needed']))
+            ctx.fillStyle = '#161d3f'
+            ctx.fillRect(mid_x - 20, y_start + 12, 80, 10)
+            ctx.fillStyle = '#ff0055'
+            ctx.fillRect(mid_x - 20, y_start + 12, int(80 * progress), 10)
+
+            # Relics
+            if len(sector_mgr.acquired_relics) > 0:
+                relic_icons = "".join([r['icon'] for r in sector_mgr.acquired_relics])
+                ctx.font = '12px sans-serif'
+                ctx.fillText(relic_icons, mid_x + 95, y_start + 21)
+        else:
+            ctx.fillStyle = '#475569'
+            ctx.font = '8.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText("SWIPE TO PLAY // TAP TO ROTATE", mid_x, y_start + 20)
+
+        ctx.restore()
 
     def draw_hud(self, ctx, game, sector_mgr, game_mode, px, py, high_score=0):
         """Draws High Score, Score, Level, Lines, Sector progress, and Active Relics."""
@@ -1279,23 +1435,31 @@ class CanvasRenderer:
 
         ctx.restore()
 
-    def draw_banner(self, ctx, title, subtitle, color):
+    def draw_banner(self, ctx, title, subtitle, color, canvas_w=750, canvas_h=720):
         """Draws a centered pop-up banner for Game Over or Pause."""
         ctx.save()
-        ctx.fillStyle = 'rgba(6, 8, 20, 0.88)'
-        ctx.fillRect(140, 240, 380, 140)
+        bw = min(360, canvas_w - 24)
+        bh = 135
+        bx = int((canvas_w - bw) / 2)
+        by = int((canvas_h - bh) / 2)
+        mid_x = bx + bw / 2
+
+        ctx.fillStyle = 'rgba(6, 8, 20, 0.94)'
+        ctx.fillRect(bx, by, bw, bh)
         ctx.strokeStyle = color
         ctx.lineWidth = 2
         ctx.shadowColor = color
         ctx.shadowBlur = 15
-        ctx.strokeRect(140, 240, 380, 140)
+        ctx.strokeRect(bx, by, bw, bh)
 
         ctx.fillStyle = color
-        ctx.font = 'bold 20px "Neuropol", "Orbitron", sans-serif'
+        font_sz = 16 if canvas_w < 500 else 20
+        ctx.font = f'bold {font_sz}px "Neuropol", "Orbitron", sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText(title, 330, 295)
+        ctx.fillText(title, mid_x, by + 50)
 
         ctx.fillStyle = '#ffffff'
-        ctx.font = '12px "Neuropol", "Orbitron", sans-serif'
-        ctx.fillText(subtitle, 330, 340)
+        sub_sz = 9.5 if canvas_w < 500 else 12
+        ctx.font = f'bold {sub_sz}px "Neuropol", "Orbitron", sans-serif'
+        ctx.fillText(subtitle, mid_x, by + 90)
         ctx.restore()
