@@ -490,9 +490,13 @@ class GameApp:
                 # Explosive outward line break animation + flash (exploding outward from middle to left and right)
                 self.renderer.trigger_line_clear_effect(cleared_rows, lines)
 
-                # Juicy badge for Tetris (4-line clear)
+                # Juicy badge for multi-line clears
                 if lines >= 4:
-                    self.renderer.floating_badges.append(FloatingBadge("TETRIS!", "4-LINE CLEAR", icon='⚡', x=150, y=300, color='#00f0f0'))
+                    self.renderer.floating_badges.append(FloatingBadge("TETRIS!", "4-LINE CLEAR", icon='⚡', x=150, y=300, color='#ffd700'))
+                elif lines == 3:
+                    self.renderer.floating_badges.append(FloatingBadge("TRIPLE!", "3-LINE CLEAR", icon='💥', x=150, y=300, color='#ff00aa'))
+                elif lines == 2:
+                    self.renderer.floating_badges.append(FloatingBadge("DOUBLE!", "2-LINE CLEAR", icon='✨', x=150, y=300, color='#00ffcc'))
 
                 # Combo announcement badge
                 combo_val = ev.get('combo', 0)
