@@ -610,12 +610,15 @@ body {
 }
 
 /* Mobile Touch Controls Virtual Gamepad - HIDDEN by default on PC / Desktop */
-.mobile-controls {
+.mobile-controls,
+#mobileControlsMount,
+#mobileControls {
   display: none !important;
 }
 
 /* ONLY display when running on an actual mobile/tablet touch device */
-html.touch-device .mobile-controls {
+html.touch-device .mobile-controls,
+html.touch-device #mobileControlsMount {
   display: flex !important;
   width: 100%;
   max-width: 600px;
@@ -629,7 +632,7 @@ html.touch-device .mobile-controls {
 
 /* Redundant desktop PC safeguard: hide controls on any device with hover and fine mouse pointer */
 @media (hover: hover) and (pointer: fine) {
-  #mobileControls, .mobile-controls {
+  #mobileControls, .mobile-controls, #mobileControlsMount {
     display: none !important;
   }
 }
