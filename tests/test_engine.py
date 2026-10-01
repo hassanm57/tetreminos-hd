@@ -165,5 +165,22 @@ class TestTetrisEngine(unittest.TestCase):
         renderer.update_particles(0.1)
         self.assertGreater(len(renderer.particles), 0)
 
+    def test_classic_mode_has_no_abilities(self):
+        """In classic mode (enable_abilities=False), all pieces must have ABILITY_NONE."""
+        classic_game = TetrisGame(enable_abilities=False)
+        self.assertFalse(classic_game.enable_abilities)
+        
+        # Test 100 spawned pieces across 15 bags
+        for _ in range(100):
+            self.assertIsNotNone(classic_game.current_piece)
+            self.assertEqual(classic_game.current_piece.ability, ABILITY_NONE)
+            classic_game.spawn_next_piece()
+
+        # Check all pieces in bag and next queue
+        for piece in classic_game.next_queue:
+            self.assertEqual(piece.ability, ABILITY_NONE)
+        for piece in classic_game.bag:
+            self.assertEqual(piece.ability, ABILITY_NONE)
+
 if __name__ == '__main__':
     unittest.main()

@@ -27,7 +27,7 @@ class GameApp:
     """
     def __init__(self):
         self.game_mode = 'ROGUE'  # 'CLASSIC' or 'ROGUE'
-        self.game = TetrisGame(enable_abilities=True)
+        self.game = TetrisGame(enable_abilities=(self.game_mode == 'ROGUE'))
         self.sector_mgr = SectorManager() if self.game_mode == 'ROGUE' else None
         self.audio = SynthwaveAudio()
         self.renderer = CanvasRenderer()
@@ -69,6 +69,7 @@ class GameApp:
         # Bind touch/mouse UI button events
         self.setup_ui_buttons()
         self.setup_touch_controls()
+        self.update_mode_ui_elements()
 
         # Start 60 FPS animation loop
         self.last_frame_time = time.time()
@@ -527,9 +528,14 @@ class GameApp:
 
     def restart_game(self):
         """Reboots the game state."""
-        self.game = TetrisGame(enable_abilities=True)
+        # Pure classic mode has zero powerups (pure Guideline Tetris)
+        enable_abilities = (self.game_mode == 'ROGUE')
+        self.game = TetrisGame(enable_abilities=enable_abilities)
         if self.game_mode == 'ROGUE':
             self.sector_mgr = SectorManager()
+        else:
+            self.sector_mgr = None
+
         self.left_held = False
         self.right_held = False
         self.down_held = False
@@ -537,6 +543,24 @@ class GameApp:
         self.repeat_timer = 0.0
         self.down_timer = 0.0
         self.update_relic_modal_ui()
+        self.update_mode_ui_elements()
+
+    def update_mode_ui_elements(self):
+        """Hides tactical power drawer and arsenal buttons in Classic mode for a pure distraction-free experience."""
+        if not HAS_BROWSER_ENV:
+            return
+        power_drawer = js.document.getElementById("powerDrawer")
+        touch_intel = js.document.getElementById("touch-intel")
+        if self.game_mode == 'CLASSIC':
+            if power_drawer:
+                power_drawer.style.display = "none"
+            if touch_intel:
+                touch_intel.style.display = "none"
+        else:
+            if power_drawer:
+                power_drawer.style.display = "flex"
+            if touch_intel:
+                touch_intel.style.display = "flex"
 
     def process_events(self):
         """Consumes pending game events and triggers audio and visual effects."""
