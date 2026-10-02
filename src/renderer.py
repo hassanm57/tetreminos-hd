@@ -1217,21 +1217,22 @@ class CanvasRenderer:
         if game.current_piece and not game.game_over:
             blocks = game.current_piece.get_block_positions()
             ability = game.current_piece.ability
-            ability_idx = game.current_piece.ability_block_index
+            # For power-up pieces, ALL 4 blocks glow with the vibrant ability style and color!
             for i, (px, py) in enumerate(blocks):
                 if py >= HIDDEN_ROWS:
                     bx = offset_x + px * BLOCK_SIZE
                     by = offset_y + (py - HIDDEN_ROWS) * BLOCK_SIZE
-                    block_ability = ability if (i == ability_idx) else ABILITY_NONE
-                    self.draw_neon_block(ctx, bx, by, game.current_piece.color, block_ability, draw_icon=False)
+                    self.draw_neon_block(ctx, bx, by, game.current_piece.color, ability, draw_icon=False)
 
-            # Draw prominent floating powerup icon ABOVE the active power block on top of the entire piece
-            if ability != ABILITY_NONE and ability_idx is not None and ability_idx < len(blocks):
-                apx, apy = blocks[ability_idx]
-                if apy >= HIDDEN_ROWS - 1:
-                    abx = offset_x + apx * BLOCK_SIZE
-                    aby = offset_y + (apy - HIDDEN_ROWS) * BLOCK_SIZE
-                    self.draw_floating_powerup_icon(ctx, abx, aby, ability)
+            # Draw prominent floating powerup icon ABOVE the active power piece (centered horizontally over whole piece)
+            if ability != ABILITY_NONE and len(blocks) > 0:
+                min_px = min(p[0] for p in blocks)
+                max_px = max(p[0] for p in blocks)
+                min_py = min(p[1] for p in blocks)
+                if min_py >= HIDDEN_ROWS - 1:
+                    piece_mid_x = offset_x + ((min_px + max_px + 1) / 2.0) * BLOCK_SIZE
+                    piece_top_y = offset_y + (min_py - HIDDEN_ROWS) * BLOCK_SIZE
+                    self.draw_floating_powerup_icon(ctx, 0, piece_top_y, ability, custom_center_x=piece_mid_x)
 
         # 6. Draw Visual Effects
         # 6.0 Line break outward explosion effects
@@ -1368,11 +1369,11 @@ class CanvasRenderer:
             ctx.strokeRect(x + 1 + shrink, y + 1 + shrink, BLOCK_SIZE - 2 - (shrink * 2), BLOCK_SIZE - 2 - (shrink * 2))
         ctx.restore()
 
-    def draw_floating_powerup_icon(self, ctx, x, y, ability):
+    def draw_floating_powerup_icon(self, ctx, x, y, ability, custom_center_x=None):
         """
-        Draws the powerup icon prominently hovering ABOVE the block.
+        Draws the powerup icon prominently hovering ABOVE the block or piece.
         Includes a glowing tactical dark backing badge, neon border,
-        and directional pointer beacon connecting it to the block.
+        and directional pointer beacon connecting it to the block or piece.
         """
         if ability == ABILITY_NONE or ability not in ABILITY_INFO:
             return
@@ -1385,7 +1386,7 @@ class CanvasRenderer:
         pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
         hover = math.sin(time.time() * 5.0) * 2.0
 
-        cx = x + (BLOCK_SIZE / 2.0)
+        cx = custom_center_x if custom_center_x is not None else (x + (BLOCK_SIZE / 2.0))
         badge_r = 15.0 if not self.is_mobile else 13.0
         icon_y = y - badge_r - 4.0 + hover
 
@@ -1637,18 +1638,20 @@ class CanvasRenderer:
         shape_offsets = TETROMINO_SHAPES[piece.shape][0]
         has_ability = (piece.ability != ABILITY_NONE)
 
+        info = None
+        acolor = piece.color
+        if has_ability:
+            info = ABILITY_INFO.get(piece.ability, {})
+            acolor = info.get('color', '#ff0055')
+            if piece.ability == 'HEAVY' and acolor == '#708090':
+                acolor = '#f59e0b'
+            pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
+
         for idx, (ox, oy) in enumerate(shape_offsets):
             mx = base_x + ox * mini_size
             my = base_y + oy * mini_size
             
-            is_ability_block = (has_ability and idx == piece.ability_block_index)
-            
-            if is_ability_block:
-                info = ABILITY_INFO.get(piece.ability, {})
-                acolor = info.get('color', '#ff0055')
-                if piece.ability == 'HEAVY' and acolor == '#708090':
-                    acolor = '#f59e0b'
-                pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
+            if has_ability:
                 cx = mx + (mini_size / 2.0)
 
                 # Outer glowing aura around the mini power block
@@ -1667,7 +1670,7 @@ class CanvasRenderer:
                     ctx.fillStyle = acolor
                 ctx.fill()
 
-                # Full mini block solid vibrant fill with neon glow (no dark center!)
+                # Full mini block solid vibrant fill with neon glow
                 ctx.globalAlpha = 1.0
                 ctx.fillStyle = acolor
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
@@ -1684,32 +1687,41 @@ class CanvasRenderer:
                     ctx.shadowBlur = 8
                 ctx.lineWidth = 1.6
                 ctx.strokeRect(mx + 0.5, my + 0.5, mini_size - 1, mini_size - 1)
-
-                # Floating mini powerup icon above the mini block
-                mini_badge_r = 7.5 if mini_size >= 15 else 6.5
-                mini_icon_y = my - mini_badge_r - 2.0
-
-                # Small dark backing disc
-                ctx.beginPath()
-                ctx.arc(cx, mini_icon_y, mini_badge_r, 0, math.pi * 2)
-                ctx.fillStyle = '#050814'
-                ctx.globalAlpha = 0.94
-                ctx.fill()
-                ctx.strokeStyle = acolor
-                ctx.lineWidth = 1.5
-                ctx.stroke()
-
-                # Mini icon
-                icon_sz = 11 if mini_size < 15 else 13
-                ctx.font = f'bold {icon_sz}px sans-serif'
-                ctx.textAlign = 'center'
-                ctx.textBaseline = 'middle'
-                ctx.fillStyle = '#ffffff'
-                ctx.fillText(info.get('symbol', '⚡'), cx, mini_icon_y + 0.5)
                 ctx.restore()
             else:
                 ctx.fillStyle = piece.color
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
+
+        # If it's a power-up piece, draw ONE floating icon centered above the entire mini piece
+        if has_ability and info:
+            min_ox = min(p[0] for p in shape_offsets)
+            max_ox = max(p[0] for p in shape_offsets)
+            min_oy = min(p[1] for p in shape_offsets)
+            mini_cx = base_x + ((min_ox + max_ox + 1) / 2.0) * mini_size
+            mini_top_y = base_y + min_oy * mini_size
+
+            mini_badge_r = 7.5 if mini_size >= 15 else 6.5
+            mini_icon_y = mini_top_y - mini_badge_r - 2.0
+
+            ctx.save()
+            # Small dark backing disc
+            ctx.beginPath()
+            ctx.arc(mini_cx, mini_icon_y, mini_badge_r, 0, math.pi * 2)
+            ctx.fillStyle = '#050814'
+            ctx.globalAlpha = 0.94
+            ctx.fill()
+            ctx.strokeStyle = acolor
+            ctx.lineWidth = 1.5
+            ctx.stroke()
+
+            # Mini icon
+            icon_sz = 11 if mini_size < 15 else 13
+            ctx.font = f'bold {icon_sz}px sans-serif'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillStyle = '#ffffff'
+            ctx.fillText(info.get('symbol', '⚡'), mini_cx, mini_icon_y + 0.5)
+            ctx.restore()
 
     def draw_mobile_top_bar(self, ctx, game, high_score, canvas_w, bar_h=74):
         """Renders compact top bar for mobile portrait view: Hold (left), HUD (center), Next (right)."""

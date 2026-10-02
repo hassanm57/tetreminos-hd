@@ -286,8 +286,8 @@ class TestTetrisEngine(unittest.TestCase):
         self.assertEqual(self.game.line_clear_timer, 0.0)
         self.assertIsNotNone(self.game.current_piece)
 
-    def test_stone_and_freeze_icons_removed_on_touchdown(self):
-        """Stone and freeze blocks must have their icons removed (ability set to NONE) once locked on board."""
+    def test_stone_freeze_and_magnet_icons_removed_on_touchdown(self):
+        """Stone, freeze, and magnet blocks must have their icons removed (ability set to NONE) once locked on board."""
         # Test Freeze piece
         freeze_piece = Piece('O', ability=ABILITY_FREEZE, ability_block_index=0)
         freeze_piece.x = 0
@@ -315,6 +315,36 @@ class TestTetrisEngine(unittest.TestCase):
             cell = self.game.board[by][bx]
             self.assertIsNotNone(cell)
             self.assertEqual(cell['ability'], ABILITY_NONE, "Stone/Heavy block should have ability set to NONE on touchdown")
+
+        # Test Magnet piece
+        magnet_piece = Piece('O', ability=ABILITY_MAGNET, ability_block_index=2)
+        magnet_piece.x = 6
+        magnet_piece.y = 22  # at bottom
+        self.game.current_piece = magnet_piece
+        magnet_blocks = list(magnet_piece.get_block_positions())
+
+        self.game.lock_current_piece()
+
+        for bx, by in magnet_blocks:
+            cell = self.game.board[by][bx]
+            self.assertIsNotNone(cell)
+            self.assertEqual(cell['ability'], ABILITY_NONE, "Magnet block should have ability set to NONE on touchdown")
+
+    def test_powerup_piece_full_color_and_rotation(self):
+        """Powerup pieces must take on the signature glowy ability color for the whole piece and rotate cleanly."""
+        from config import ABILITY_INFO
+        for ab in [ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY]:
+            piece = Piece('T', ability=ab)
+            self.assertEqual(piece.color, ABILITY_INFO[ab]['color'], f"Piece with {ab} must have full ability color")
+
+        # Test Bomb piece rotation
+        bomb_piece = Piece('T', ability=ABILITY_BOMB)
+        bomb_piece.x = 4
+        bomb_piece.y = 10
+        self.game.current_piece = bomb_piece
+        self.assertTrue(self.game.rotate(clockwise=True))
+        self.assertEqual(self.game.current_piece.rotation, 1)
+        self.assertEqual(self.game.current_piece.color, ABILITY_INFO[ABILITY_BOMB]['color'])
 
 if __name__ == '__main__':
     unittest.main()

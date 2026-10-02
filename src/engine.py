@@ -5,7 +5,7 @@ import random
 from config import (
     BOARD_WIDTH, BOARD_HEIGHT, HIDDEN_ROWS, TOTAL_HEIGHT,
     INITIAL_FALL_SPEED, SOFT_DROP_SPEED, LOCK_DELAY, MAX_LOCK_RESETS, LINE_CLEAR_DELAY,
-    COLORS, ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING,
+    COLORS, ABILITY_INFO, ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING,
     ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY,
     SCORE_SINGLE, SCORE_DOUBLE, SCORE_TRIPLE, SCORE_TETRIS,
     SCORE_TSPIN_MINI, SCORE_TSPIN_SINGLE, SCORE_TSPIN_DOUBLE, SCORE_TSPIN_TRIPLE,
@@ -25,10 +25,15 @@ class Piece:
     def __init__(self, shape_type, ability=ABILITY_NONE, ability_block_index=None):
         self.shape = shape_type
         self.rotation = 0  # 0: spawn, 1: 90 deg, 2: 180 deg, 3: 270 deg
-        self.color = COLORS.get(shape_type, '#ffffff')
         self.ability = ability
+
+        # Power-up pieces take on their ability's signature glowing color for all their blocks
+        if self.ability != ABILITY_NONE and self.ability in ABILITY_INFO:
+            self.color = ABILITY_INFO[self.ability]['color']
+        else:
+            self.color = COLORS.get(shape_type, '#ffffff')
         
-        # If this piece has a special ability, pick which of its 4 blocks has it
+        # If this piece has a special ability, pick which of its 4 blocks has the epicenter
         if self.ability != ABILITY_NONE:
             self.ability_block_index = ability_block_index if ability_block_index is not None else random.randint(0, 3)
         else:
@@ -371,11 +376,12 @@ class TetrisGame:
             elif ability == ABILITY_HEAVY:
                 self.pending_events.append({'type': 'ability_heavy_landed', 'x': ax, 'y': ay})
 
-        # Remove icons from stone and freeze blocks once they touch down onto the board
-        if ability in (ABILITY_FREEZE, ABILITY_HEAVY):
-            for bx, by in blocks:
-                if 0 <= by < TOTAL_HEIGHT and 0 <= bx < BOARD_WIDTH and self.board[by][bx] is not None:
-                    self.board[by][bx]['ability'] = ABILITY_NONE
+        # Remove icons from stone, freeze, and magnet blocks once they touch down onto the board
+        if ability in (ABILITY_FREEZE, ABILITY_HEAVY, ABILITY_MAGNET):
+            for y in range(TOTAL_HEIGHT):
+                for x in range(BOARD_WIDTH):
+                    if self.board[y][x] is not None and self.board[y][x].get('ability') == ability:
+                        self.board[y][x]['ability'] = ABILITY_NONE
 
         # Check and clear completed lines
         full_rows = self.get_full_lines()
