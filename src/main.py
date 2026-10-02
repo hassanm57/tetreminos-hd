@@ -711,6 +711,12 @@ class GameApp:
 
             elif etype == 'game_over':
                 self.audio.play_game_over()
+                if HAS_BROWSER_ENV and hasattr(js, 'window') and hasattr(js.window, 'onTetrisGameOver'):
+                    sector_num = self.sector_mgr.current_sector if self.sector_mgr else 1
+                    try:
+                        js.window.onTetrisGameOver(self.game.score, self.game_mode, self.game.lines_cleared, sector_num)
+                    except Exception as err:
+                        pass
 
         # Check and persist High Score
         if self.game.score > self.high_score:

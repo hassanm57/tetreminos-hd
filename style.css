@@ -1379,3 +1379,532 @@ body {
     font-size: 11px !important;
   }
 }
+
+/* ==========================================================================
+   GLOBAL LEADERBOARD & PILOT CALLSIGN CYBERPUNK STYLES
+   ========================================================================== */
+
+/* Welcome Callsign Input */
+.welcome-callsign-section {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.callsign-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.callsign-label {
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #00f0ff;
+  letter-spacing: 1px;
+}
+
+.callsign-hint {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.callsign-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(4, 7, 18, 0.9);
+  border: 1.5px solid #1e293b;
+  border-radius: 6px;
+  padding: 2px 10px;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.6) inset;
+}
+
+.callsign-input-wrapper:focus-within {
+  border-color: #00f0ff;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35), 0 0 15px rgba(0, 0, 0, 0.8) inset;
+}
+
+.callsign-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: #00f0ff;
+}
+
+.callsign-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  padding: 8px 0;
+  text-transform: uppercase;
+}
+
+.callsign-input::placeholder {
+  color: #475569;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.callsign-feedback {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  min-height: 16px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.callsign-feedback.success {
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.callsign-feedback.error {
+  color: #ff0055;
+  text-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
+}
+
+/* Welcome Screen Leaderboard Button */
+.welcome-secondary-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 8px;
+  z-index: 10;
+}
+
+.welcome-leaderboard-btn {
+  background: rgba(10, 16, 32, 0.85);
+  border: 1.5px solid rgba(255, 215, 0, 0.45);
+  border-radius: 6px;
+  color: #ffd700;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 9px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+}
+
+.welcome-leaderboard-btn:hover {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: #ffd700;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.45);
+  transform: translateY(-2px);
+}
+
+.lb-btn-icon {
+  font-size: 15px;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.8));
+}
+
+.lb-header-btn {
+  border-color: rgba(255, 215, 0, 0.5) !important;
+  color: #ffd700 !important;
+}
+
+.lb-header-btn:hover {
+  background: rgba(255, 215, 0, 0.18) !important;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.45) !important;
+}
+
+/* Leaderboard Modal */
+.lb-modal {
+  z-index: 110 !important;
+}
+
+.lb-modal-content {
+  background: #060914 !important;
+  border: 1.5px solid #1e293b !important;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.2), 0 0 60px rgba(0, 0, 0, 0.9) !important;
+  max-width: 660px !important;
+  width: 95% !important;
+  padding: 20px 22px !important;
+  border-radius: 10px !important;
+}
+
+.lb-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.lb-title-group {
+  text-align: left;
+}
+
+.lb-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #00f0ff;
+  letter-spacing: 2px;
+}
+
+.lb-title {
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1px;
+  margin: 3px 0 0 0;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+}
+
+.lb-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lb-close-btn:hover {
+  background: rgba(255, 0, 85, 0.2);
+  border-color: #ff0055;
+  color: #ffffff;
+}
+
+/* Tabs */
+.lb-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.lb-tab-btn {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lb-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: #ffffff;
+}
+
+.lb-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: #00f0ff;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+}
+
+/* Active Pilot Summary Card */
+.lb-pilot-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+}
+
+.lb-pilot-info, .lb-pilot-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lb-pilot-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 1px;
+}
+
+.lb-pilot-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00f0ff;
+}
+
+.lb-pilot-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffb703;
+}
+
+/* Table Container & Table */
+.lb-table-container {
+  max-height: 310px;
+  overflow-y: auto;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.7);
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+}
+
+.lb-table th {
+  background: rgba(15, 23, 42, 0.95);
+  color: #94a3b8;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid #334155;
+}
+
+.lb-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.4);
+  color: #cbd5e1;
+}
+
+.lb-row:hover {
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.col-rank { width: 14%; text-align: center; }
+.col-pilot { width: 32%; }
+.col-score { width: 20%; text-align: right; }
+.col-stage { width: 14%; text-align: center; }
+.col-lines { width: 10%; text-align: center; }
+.col-date { width: 10%; font-size: 11px; color: #64748b; text-align: right; }
+
+.rank-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  display: inline-block;
+}
+
+.rank-badge.gold {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+}
+
+.rank-badge.silver {
+  color: #e2e8f0;
+  text-shadow: 0 0 8px rgba(226, 232, 240, 0.6);
+}
+
+.rank-badge.bronze {
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.score-num {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.stage-pill {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 240, 255, 0.12);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+/* ==========================================================================
+   CHAMPION & CREATOR hassanm57 GOLD GLOW STYLING WITH ANIMATED CROWN
+   ========================================================================== */
+.pilot-creator {
+  color: #ffd700 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 13.5px !important;
+  letter-spacing: 1px !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.95), 0 0 20px rgba(255, 170, 0, 0.7), 0 0 35px rgba(255, 215, 0, 0.45) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.crown-icon {
+  font-size: 1.25em !important;
+  filter: drop-shadow(0 0 8px #ffd700) !important;
+  animation: creatorCrownPulse 2.2s ease-in-out infinite alternate !important;
+}
+
+@keyframes creatorCrownPulse {
+  0% { transform: scale(1.0) rotate(-4deg); filter: drop-shadow(0 0 6px #ffd700); }
+  100% { transform: scale(1.22) rotate(4deg); filter: drop-shadow(0 0 14px #ff9900); }
+}
+
+.creator-tag {
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #ffd700, #ff8800);
+  color: #000000;
+  letter-spacing: 1px;
+  text-shadow: none;
+  margin-left: 3px;
+}
+
+.lb-row-creator {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.05), transparent) !important;
+  border-left: 3.5px solid #ffd700 !important;
+}
+
+.lb-row-creator .score-num {
+  color: #ffd700 !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8) !important;
+}
+
+.lb-row-me {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.14), rgba(0, 240, 255, 0.03), transparent) !important;
+  border-left: 3.5px solid #00f0ff !important;
+}
+
+.pilot-me {
+  color: #00f0ff;
+  font-weight: 700;
+}
+
+.you-tag {
+  font-size: 9px;
+  color: #00f0ff;
+  font-weight: 700;
+}
+
+.lb-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.lb-footer-tip {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.lb-refresh-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lb-refresh-btn:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  color: #ffffff;
+}
+
+.lb-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(6, 9, 20, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #00f0ff;
+  font-family: 'Neuropol', 'Orbitron', sans-serif;
+  font-size: 11px;
+  z-index: 5;
+}
+
+.lb-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid rgba(0, 240, 255, 0.2);
+  border-top-color: #00f0ff;
+  border-radius: 50%;
+  animation: lbSpin 0.75s linear infinite;
+}
+
+@keyframes lbSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .welcome-callsign-section {
+    max-width: 280px;
+    margin-bottom: 12px;
+  }
+  .welcome-leaderboard-btn {
+    padding: 7px 14px;
+    font-size: 9.5px;
+  }
+  .lb-modal-content {
+    padding: 14px 12px !important;
+  }
+  .lb-title {
+    font-size: 14px;
+  }
+  .col-date {
+    display: none;
+  }
+  .lb-table td, .lb-table th {
+    padding: 8px 6px;
+    font-size: 11.5px;
+  }
+  .score-num {
+    font-size: 11.5px;
+  }
+}
