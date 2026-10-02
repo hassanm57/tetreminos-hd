@@ -1181,6 +1181,7 @@ class CanvasRenderer:
         # 3. Draw Locked Blocks on the Board
         clearing_rows = getattr(game, 'clearing_rows', [])
         clear_timer = getattr(game, 'line_clear_timer', 0.0)
+        power_cells_to_draw = []
 
         for row in range(HIDDEN_ROWS, TOTAL_HEIGHT):
             is_row_clearing = (row in clearing_rows and clear_timer > 0.0)
@@ -1190,10 +1191,17 @@ class CanvasRenderer:
                     bx = offset_x + col * BLOCK_SIZE
                     by = offset_y + (row - HIDDEN_ROWS) * BLOCK_SIZE
                     burn_timer = cell.get('burn_timer')
+                    cell_ability = cell.get('ability', ABILITY_NONE)
                     if is_row_clearing:
                         self.draw_clearing_block(ctx, bx, by, cell['color'], clear_timer, LINE_CLEAR_DELAY)
                     else:
-                        self.draw_neon_block(ctx, bx, by, cell['color'], cell.get('ability', ABILITY_NONE), burn_timer)
+                        self.draw_neon_block(ctx, bx, by, cell['color'], cell_ability, burn_timer, draw_icon=False)
+                        if cell_ability != ABILITY_NONE:
+                            power_cells_to_draw.append((bx, by, cell_ability))
+
+        # Draw floating powerup icons above locked power blocks (e.g. burning mino) on top of all blocks
+        for pbx, pby, p_ability in power_cells_to_draw:
+            self.draw_floating_powerup_icon(ctx, pbx, pby, p_ability)
 
         # 4. Draw Ghost Piece (Holographic landing guide)
         if game.current_piece and not game.game_over:
@@ -1215,7 +1223,15 @@ class CanvasRenderer:
                     bx = offset_x + px * BLOCK_SIZE
                     by = offset_y + (py - HIDDEN_ROWS) * BLOCK_SIZE
                     block_ability = ability if (i == ability_idx) else ABILITY_NONE
-                    self.draw_neon_block(ctx, bx, by, game.current_piece.color, block_ability)
+                    self.draw_neon_block(ctx, bx, by, game.current_piece.color, block_ability, draw_icon=False)
+
+            # Draw prominent floating powerup icon ABOVE the active power block on top of the entire piece
+            if ability != ABILITY_NONE and ability_idx is not None and ability_idx < len(blocks):
+                apx, apy = blocks[ability_idx]
+                if apy >= HIDDEN_ROWS - 1:
+                    abx = offset_x + apx * BLOCK_SIZE
+                    aby = offset_y + (apy - HIDDEN_ROWS) * BLOCK_SIZE
+                    self.draw_floating_powerup_icon(ctx, abx, aby, ability)
 
         # 6. Draw Visual Effects
         # 6.0 Line break outward explosion effects
@@ -1352,11 +1368,79 @@ class CanvasRenderer:
             ctx.strokeRect(x + 1 + shrink, y + 1 + shrink, BLOCK_SIZE - 2 - (shrink * 2), BLOCK_SIZE - 2 - (shrink * 2))
         ctx.restore()
 
-    def draw_neon_block(self, ctx, x, y, color, ability=ABILITY_NONE, burn_timer=None):
+    def draw_floating_powerup_icon(self, ctx, x, y, ability):
+        """
+        Draws the powerup icon prominently hovering ABOVE the block.
+        Includes a glowing tactical dark backing badge, neon border,
+        and directional pointer beacon connecting it to the block.
+        """
+        if ability == ABILITY_NONE or ability not in ABILITY_INFO:
+            return
+
+        info = ABILITY_INFO[ability]
+        ability_color = info.get('color', '#00ffff')
+        if ability == 'HEAVY' and ability_color == '#708090':
+            ability_color = '#f59e0b'
+
+        pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
+        hover = math.sin(time.time() * 5.0) * 2.0
+
+        cx = x + (BLOCK_SIZE / 2.0)
+        badge_r = 15.0 if not self.is_mobile else 13.0
+        icon_y = y - badge_r - 4.0 + hover
+
+        ctx.save()
+
+        # 1. Directional pointer beacon connecting the floating badge to the block top edge
+        ctx.beginPath()
+        ctx.moveTo(cx - 4.0, icon_y + badge_r - 2.0)
+        ctx.lineTo(cx, y)
+        ctx.lineTo(cx + 4.0, icon_y + badge_r - 2.0)
+        ctx.closePath()
+        ctx.fillStyle = ability_color
+        ctx.globalAlpha = 0.90
+        ctx.fill()
+
+        # 2. Glowing tactical dark backing disc (guarantees 100% contrast & prominence)
+        ctx.beginPath()
+        ctx.arc(cx, icon_y, badge_r, 0, math.pi * 2)
+        ctx.fillStyle = '#050814'
+        ctx.globalAlpha = 0.95
+        ctx.fill()
+
+        # Radiant inner wash
+        ctx.fillStyle = ability_color
+        ctx.globalAlpha = 0.16 + 0.12 * pulse
+        ctx.fill()
+
+        # Neon outer border with glow
+        ctx.globalAlpha = 0.95
+        ctx.strokeStyle = ability_color
+        if not self.is_mobile:
+            ctx.shadowColor = ability_color
+            ctx.shadowBlur = int(12 + 6 * pulse)
+        ctx.lineWidth = 2.2
+        ctx.stroke()
+
+        # 3. Big, bold, prominent powerup emoji icon
+        icon_sz = 22 if not self.is_mobile else 19
+        ctx.font = f'bold {icon_sz}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.globalAlpha = 1.0
+        if not self.is_mobile:
+            ctx.shadowColor = ability_color
+            ctx.shadowBlur = 6
+        ctx.fillText(info['symbol'], cx, icon_y + 1.0)
+
+        ctx.restore()
+
+    def draw_neon_block(self, ctx, x, y, color, ability=ABILITY_NONE, burn_timer=None, draw_icon=True):
         """
         Draws a block on the grid.
-        Power blocks are completely unique with high-contrast energy cores and distinct glowing rings!
-        On mobile, shadowBlur is bypassed to deliver 60 FPS performance.
+        Power blocks glow intensely across their ENTIRE rectangular body with multi-tier glowing bloom,
+        vibrant neon color fill, glass highlights, and pulsing energy brackets.
+        The powerup icon itself is displayed hovering prominently ABOVE the block.
         """
         ctx.save()
 
@@ -1367,102 +1451,81 @@ class CanvasRenderer:
                 ability_color = '#f59e0b'
             pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0  # 0.0 to 1.0
 
-            cx = x + (BLOCK_SIZE / 2.0)
-            cy = y + (BLOCK_SIZE / 2.0)
+            # 1. Multi-tier radiant glowing bloom radiating from the FULL BLOCK
+            ctx.globalAlpha = 0.20 + 0.15 * pulse
+            ctx.strokeStyle = ability_color
+            ctx.lineWidth = 6.0
+            ctx.strokeRect(x - 3, y - 3, BLOCK_SIZE + 6, BLOCK_SIZE + 6)
 
-            # 1. PROMINENT RADIANT GLOW AURA AROUND THE BLOCK
-            glow_r = (BLOCK_SIZE / 2.0) + 7.0 + 3.0 * pulse
-            ctx.beginPath()
-            ctx.arc(cx, cy, glow_r, 0, math.pi * 2)
-            if hasattr(ctx, 'createRadialGradient'):
-                glow_grad = ctx.createRadialGradient(cx, cy, (BLOCK_SIZE / 2.0) - 3.0, cx, cy, glow_r)
-                glow_grad.addColorStop(0.0, ability_color)
-                glow_grad.addColorStop(0.5, ability_color)
-                glow_grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)')
-                ctx.globalAlpha = 0.45 + 0.25 * pulse
-                ctx.fillStyle = glow_grad
-            else:
-                ctx.globalAlpha = 0.25 + 0.15 * pulse
-                ctx.fillStyle = ability_color
-            ctx.fill()
-
-            # 2. Outer luminous halo stroke expanding beyond cell boundaries
-            ctx.globalAlpha = 0.55 + 0.35 * pulse
+            ctx.globalAlpha = 0.50 + 0.30 * pulse
             ctx.strokeStyle = ability_color
             if not self.is_mobile:
                 ctx.shadowColor = ability_color
-                ctx.shadowBlur = int(14 + 10 * pulse)
-            ctx.lineWidth = 2.0
-            ctx.strokeRect(x - 1.5, y - 1.5, BLOCK_SIZE + 3, BLOCK_SIZE + 3)
+                ctx.shadowBlur = int(18 + 10 * pulse)
+            ctx.lineWidth = 2.5
+            ctx.strokeRect(x - 1, y - 1, BLOCK_SIZE + 2, BLOCK_SIZE + 2)
 
-            # 3. High-contrast cyber-core base with ability ambient tint wash
+            # 2. Rich vibrant full-block neon fill (full block radiates color, not black inside!)
             ctx.globalAlpha = 1.0
-            ctx.fillStyle = '#030712'
+            ctx.fillStyle = ability_color
             ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
 
-            # Inner ambient color wash
-            ctx.globalAlpha = 0.25 + 0.15 * pulse
-            ctx.fillStyle = ability_color
-            ctx.fillRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4)
+            # 3. Luminous energetic core gradient across the block
+            if hasattr(ctx, 'createLinearGradient'):
+                core_grad = ctx.createLinearGradient(x + 1, y + 1, x + BLOCK_SIZE - 1, y + BLOCK_SIZE - 1)
+                core_grad.addColorStop(0.0, 'rgba(255, 255, 255, 0.45)')
+                core_grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.15)')
+                core_grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.08)')
+                core_grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.22)')
+                ctx.fillStyle = core_grad
+                ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
 
-            # 4. Searing inner neon border
-            ctx.globalAlpha = 1.0
-            ctx.strokeStyle = ability_color
-            if not self.is_mobile:
-                ctx.shadowColor = ability_color
-                ctx.shadowBlur = int(10 + 8 * pulse)
-            ctx.lineWidth = 2.8
-            ctx.strokeRect(x + 1.5, y + 1.5, BLOCK_SIZE - 3, BLOCK_SIZE - 3)
+            # 4. Searing top/left glass highlights
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+            ctx.fillRect(x + 2, y + 2, BLOCK_SIZE - 4, 3)
+            ctx.fillRect(x + 2, y + 2, 3, BLOCK_SIZE - 4)
 
-            # 5. Pulsing corner energy brackets
+            # 5. Inner neon wireframe stroke
             ctx.strokeStyle = '#ffffff'
-            ctx.lineWidth = 1.8
-            bracket_len = 5.0
+            ctx.lineWidth = 1.5
             ctx.globalAlpha = 0.70 + 0.30 * pulse
-            # Top-left corner
+            ctx.strokeRect(x + 3.5, y + 3.5, BLOCK_SIZE - 7, BLOCK_SIZE - 7)
+
+            # 6. Pulsing corner energy brackets
+            ctx.strokeStyle = '#ffffff'
+            ctx.lineWidth = 2.0
+            ctx.globalAlpha = 0.90
+            bracket_len = 5.5
+            # Top-left
             ctx.beginPath()
             ctx.moveTo(x + 2, y + 2 + bracket_len)
             ctx.lineTo(x + 2, y + 2)
             ctx.lineTo(x + 2 + bracket_len, y + 2)
-            # Top-right corner
+            # Top-right
             ctx.moveTo(x + BLOCK_SIZE - 2 - bracket_len, y + 2)
             ctx.lineTo(x + BLOCK_SIZE - 2, y + 2)
             ctx.lineTo(x + BLOCK_SIZE - 2, y + 2 + bracket_len)
-            # Bottom-left corner
+            # Bottom-left
             ctx.moveTo(x + 2, y + BLOCK_SIZE - 2 - bracket_len)
             ctx.lineTo(x + 2, y + BLOCK_SIZE - 2)
             ctx.lineTo(x + 2 + bracket_len, y + BLOCK_SIZE - 2)
-            # Bottom-right corner
+            # Bottom-right
             ctx.moveTo(x + BLOCK_SIZE - 2 - bracket_len, y + BLOCK_SIZE - 2)
             ctx.lineTo(x + BLOCK_SIZE - 2, y + BLOCK_SIZE - 2)
             ctx.lineTo(x + BLOCK_SIZE - 2, y + BLOCK_SIZE - 2 - bracket_len)
             ctx.stroke()
 
-            # 6. Inner circular reactor core
-            ctx.globalAlpha = 0.85
-            ctx.beginPath()
-            ctx.arc(cx, cy, (BLOCK_SIZE / 2.0) - 3.5, 0, math.pi * 2)
-            ctx.fillStyle = f"rgba(255, 255, 255, {0.10 + 0.10 * pulse})"
-            ctx.fill()
-            ctx.strokeStyle = ability_color
-            ctx.lineWidth = 1.5
-            ctx.stroke()
-
-            # 7. Crisp, bold, 100% visible icon
-            ctx.globalAlpha = 1.0
-            if not self.is_mobile:
-                ctx.shadowBlur = 6
-                ctx.shadowColor = ability_color
-            ctx.font = 'bold 18px sans-serif'
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle'
-            ctx.fillText(info['symbol'], cx, cy + 1)
-
-            # 8. Active fuse indicator if burning mino
+            # 7. Active burning fuse indicator
             if burn_timer is not None:
                 fuse_pct = max(0.0, min(1.0, burn_timer / 3.0))
                 ctx.fillStyle = '#ff2200'
-                ctx.fillRect(x + 3, y + BLOCK_SIZE - 5, int((BLOCK_SIZE - 6) * fuse_pct), 3)
+                ctx.fillRect(x + 3, y + BLOCK_SIZE - 6, int((BLOCK_SIZE - 6) * fuse_pct), 4)
+
+            ctx.restore()
+
+            # 8. Prominent floating powerup icon hovering ABOVE the block
+            if draw_icon:
+                self.draw_floating_powerup_icon(ctx, x, y, ability)
 
         else:
             # Standard structural block
@@ -1479,7 +1542,7 @@ class CanvasRenderer:
             ctx.fillRect(x + 2, y + 2, BLOCK_SIZE - 4, 3)
             ctx.fillRect(x + 2, y + 2, 3, BLOCK_SIZE - 4)
 
-        ctx.restore()
+            ctx.restore()
 
     def draw_ghost_block(self, ctx, x, y, color):
         """Draws a bright, prominent holographic guide representing where the piece will land."""
@@ -1561,11 +1624,11 @@ class CanvasRenderer:
                 ctx.restore()
 
         # Preview next 4 pieces
-        preview_y = py + 45
+        preview_y = py + 52 if (len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE) else py + 45
         for i in range(min(4, len(game.next_queue))):
             piece = game.next_queue[i]
             self.draw_mini_piece(ctx, piece, px + 30, preview_y)
-            preview_y += 75
+            preview_y += 72
 
         ctx.restore()
 
@@ -1587,15 +1650,14 @@ class CanvasRenderer:
                     acolor = '#f59e0b'
                 pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
                 cx = mx + (mini_size / 2.0)
-                cy = my + (mini_size / 2.0)
 
                 # Outer glowing aura around the mini power block
                 ctx.save()
                 glow_r = (mini_size / 2.0) + (4.0 if mini_size >= 15 else 3.0) + 2.0 * pulse
                 ctx.beginPath()
-                ctx.arc(cx, cy, glow_r, 0, math.pi * 2)
+                ctx.arc(cx, my + (mini_size / 2.0), glow_r, 0, math.pi * 2)
                 if hasattr(ctx, 'createRadialGradient'):
-                    glow_grad = ctx.createRadialGradient(cx, cy, mini_size / 3.0, cx, cy, glow_r)
+                    glow_grad = ctx.createRadialGradient(cx, my + (mini_size / 2.0), mini_size / 3.0, cx, my + (mini_size / 2.0), glow_r)
                     glow_grad.addColorStop(0.0, acolor)
                     glow_grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)')
                     ctx.globalAlpha = 0.55 + 0.30 * pulse
@@ -1605,32 +1667,45 @@ class CanvasRenderer:
                     ctx.fillStyle = acolor
                 ctx.fill()
 
-                # High contrast dark core with neon border
+                # Full mini block solid vibrant fill with neon glow (no dark center!)
                 ctx.globalAlpha = 1.0
-                ctx.fillStyle = '#02040a'
+                ctx.fillStyle = acolor
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
 
-                # Ambient color wash inside mini block
-                ctx.globalAlpha = 0.30 + 0.15 * pulse
-                ctx.fillStyle = acolor
-                ctx.fillRect(mx + 1, my + 1, mini_size - 2, mini_size - 2)
+                # Top/left ambient shine
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
+                ctx.fillRect(mx + 1, my + 1, mini_size - 2, 2)
+                ctx.fillRect(mx + 1, my + 1, 2, mini_size - 2)
 
                 # Neon border
-                ctx.globalAlpha = 1.0
-                ctx.strokeStyle = acolor
+                ctx.strokeStyle = '#ffffff'
                 if not self.is_mobile:
                     ctx.shadowColor = acolor
                     ctx.shadowBlur = 8
-                ctx.lineWidth = 1.8
+                ctx.lineWidth = 1.6
                 ctx.strokeRect(mx + 0.5, my + 0.5, mini_size - 1, mini_size - 1)
 
-                # Crisp bold icon
+                # Floating mini powerup icon above the mini block
+                mini_badge_r = 7.5 if mini_size >= 15 else 6.5
+                mini_icon_y = my - mini_badge_r - 2.0
+
+                # Small dark backing disc
+                ctx.beginPath()
+                ctx.arc(cx, mini_icon_y, mini_badge_r, 0, math.pi * 2)
+                ctx.fillStyle = '#050814'
+                ctx.globalAlpha = 0.94
+                ctx.fill()
+                ctx.strokeStyle = acolor
+                ctx.lineWidth = 1.5
+                ctx.stroke()
+
+                # Mini icon
                 icon_sz = 11 if mini_size < 15 else 13
                 ctx.font = f'bold {icon_sz}px sans-serif'
                 ctx.textAlign = 'center'
                 ctx.textBaseline = 'middle'
                 ctx.fillStyle = '#ffffff'
-                ctx.fillText(info.get('symbol', '⚡'), cx, cy + 0.5)
+                ctx.fillText(info.get('symbol', '⚡'), cx, mini_icon_y + 0.5)
                 ctx.restore()
             else:
                 ctx.fillStyle = piece.color
@@ -1733,7 +1808,8 @@ class CanvasRenderer:
         ctx.restore()
 
         if len(game.next_queue) > 0:
-            self.draw_mini_piece(ctx, game.next_queue[0], nx + 8, ny + 20, mini_size=11)
+            top_offset = 24 if has_power_next else 20
+            self.draw_mini_piece(ctx, game.next_queue[0], nx + 8, ny + top_offset, mini_size=11)
 
         # 3. Center HUD: High Score, Score, Level & Lines
         mid_x = canvas_w / 2.0

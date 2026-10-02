@@ -130,12 +130,15 @@ class TestResponsiveRenderer(unittest.TestCase):
         for ab in abilities:
             self.renderer.draw_neon_block(ctx, x=50, y=100, color='#00f0f0', ability=ab)
 
-    def test_mobile_top_bar_powerup_prominence(self):
-        """draw_mobile_top_bar should render prominent glowing alert box when next piece has a powerup."""
-        mobile_ctx = MockContext(width=360, height=720)
-        self.game.next_queue[0] = Piece('T', ability=ABILITY_BOMB)
-        self.renderer.draw_mobile_top_bar(mobile_ctx, self.game, high_score=1500, canvas_w=360)
-
+    def test_floating_powerup_icon_rendering(self):
+        """draw_floating_powerup_icon should render above the block with dark backing and pointer beacon."""
+        from config import ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY
+        ctx_desktop = MockContext(width=750, height=720)
+        ctx_mobile = MockContext(width=360, height=720)
+        self.renderer.is_mobile = False
+        self.renderer.draw_floating_powerup_icon(ctx_desktop, x=60, y=120, ability=ABILITY_BOMB)
+        self.renderer.is_mobile = True
+        self.renderer.draw_floating_powerup_icon(ctx_mobile, x=60, y=120, ability=ABILITY_LIGHTNING)
 
 if __name__ == '__main__':
     unittest.main()
