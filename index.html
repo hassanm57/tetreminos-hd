@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=9.0">
+  <link rel="stylesheet" href="style.css?v=10.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -311,7 +311,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=9.0`);
+          const response = await fetch(`./src/${fileName}?v=10.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -411,11 +411,12 @@ import main
         lastX = curX;
         lastY = curY;
 
+        const totalDx = curX - startX;
         const totalDy = curY - startY;
         const elapsed = Date.now() - startTime;
 
-        // Instant downward flick hard drop
-        if (totalDy > 48 && elapsed < 200 && dy > 16) {
+        // In-flight extreme downward power-flick (must be strictly vertical and high velocity, never triggered by horizontal swipes)
+        if (totalDy > 120 && elapsed < 200 && dy > 30 && totalDy > Math.abs(totalDx) * 3.0) {
           if (window.tetrisApp && window.tetrisApp.handle_touch_hard_drop) {
             window.tetrisApp.handle_touch_hard_drop();
           }
@@ -472,7 +473,10 @@ import main
         const elapsed = Date.now() - startTime;
 
         // 1. Swipe Down -> Hard Drop
-        if (totalDy > 42 && (totalDy / Math.max(10, elapsed) > 0.24 || elapsed < 240)) {
+        // Requires deliberate downward flick and strict vertical dominance (never triggers on horizontal swipes)
+        const isVerticalDown = totalDy > 68 && totalDy > Math.abs(totalDx) * 1.8;
+        const isFlickVelocity = (totalDy / Math.max(10, elapsed) > 0.32) || (totalDy > 95 && elapsed < 350);
+        if (isVerticalDown && isFlickVelocity) {
           if (window.tetrisApp && window.tetrisApp.handle_touch_hard_drop) {
             window.tetrisApp.handle_touch_hard_drop();
           }
@@ -480,20 +484,21 @@ import main
         }
 
         // 2. Swipe Up -> Hold
-        if (totalDy < -38 && elapsed < 350 && Math.abs(totalDx) < Math.abs(totalDy) * 1.5) {
+        const isVerticalUp = totalDy < -52 && Math.abs(totalDy) > Math.abs(totalDx) * 1.8;
+        if (isVerticalUp && elapsed < 350) {
           if (window.tetrisApp && window.tetrisApp.handle_touch_hold) {
             window.tetrisApp.handle_touch_hold();
           }
           return;
         }
 
-        // 3. Clean Tap -> Rotate Exactly 90 Degrees
+        // 3. Clean Tap -> Rotate Instantly Exactly 90 Degrees
         // Left half of screen -> Counter-Clockwise (CCW / anti-clockwise)
         // Right half of screen -> Clockwise (CW)
         if (!hasMoved && Math.abs(totalDx) < 22 && Math.abs(totalDy) < 22 && elapsed < 350) {
           const now = Date.now();
-          if (now - lastRotateTime < 200) {
-            return; // Debounce lock: prevent rapid multi-rotation from hardware bounce
+          if (now - lastRotateTime < 45) {
+            return; // 45ms guard prevents 0ms hardware/OS multi-event echo while feeling instant
           }
           lastRotateTime = now;
 

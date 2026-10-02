@@ -301,9 +301,9 @@ class GameApp:
             self.game.is_paused = False
             self.vibrate(15)
             return
-        # Debounce safeguard: prevent rapid duplicate rotations (< 180ms)
+        # Debounce safeguard: prevent rapid duplicate echo (< 45ms) while feeling instant
         now = time.time()
-        if now - self.last_touch_rotate_time < 0.18:
+        if now - self.last_touch_rotate_time < 0.045:
             return
         self.last_touch_rotate_time = now
         self.game.rotate(clockwise=True)
@@ -320,9 +320,9 @@ class GameApp:
             self.game.is_paused = False
             self.vibrate(15)
             return
-        # Debounce safeguard: prevent rapid duplicate rotations (< 180ms)
+        # Debounce safeguard: prevent rapid duplicate echo (< 45ms) while feeling instant
         now = time.time()
-        if now - self.last_touch_rotate_time < 0.18:
+        if now - self.last_touch_rotate_time < 0.045:
             return
         self.last_touch_rotate_time = now
         self.game.rotate(clockwise=False)
