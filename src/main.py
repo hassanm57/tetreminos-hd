@@ -43,6 +43,9 @@ class GameApp:
         # Mode Selection Modal state
         self.selected_modal_mode = self.game_mode
 
+        # Initial pause state: paused on boot in browser until user taps PLAY NOW on Welcome Screen
+        self.game.is_paused = HAS_BROWSER_ENV
+
         # High Score persistence system (browser localStorage)
         self.high_score = self.load_high_score()
         self.new_high_notified = False
@@ -133,6 +136,7 @@ class GameApp:
         self.setup_ui_buttons()
         self.setup_touch_controls()
         self.update_mode_ui_elements()
+        self.update_mobile_controls_ui()
 
         # Start 60 FPS animation loop
         self.last_frame_time = time.time()
@@ -209,14 +213,17 @@ class GameApp:
                 self.open_controls_modal()
         elif key in ["p", "P", "Escape"]:
             event.preventDefault()
-            controls_modal = js.document.getElementById("controlsModal")
-            mode_modal = js.document.getElementById("modeModal")
+            controls_modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
+            mode_modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
+            pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
             if controls_modal and controls_modal.style.display == "flex":
                 self.close_controls_modal()
             elif mode_modal and mode_modal.style.display == "flex":
                 self.close_mode_modal()
+            elif pause_modal and pause_modal.style.display == "flex":
+                self.close_pause_modal()
             else:
-                self.game.is_paused = not self.game.is_paused
+                self.toggle_pause()
 
     def on_keyup(self, event):
         """Releases held keys to stop auto-repeat immediately."""
@@ -234,7 +241,7 @@ class GameApp:
             self.down_timer = 0.0
 
     def setup_ui_buttons(self):
-        """Attaches click listeners to header buttons, drawers, and modals."""
+        """Attaches click listeners to header buttons, drawers, mobile controls, and modals."""
         button_actions = {
             "btn-controls": lambda: self.open_controls_modal(),
             "btn-controls-close": lambda: self.close_controls_modal(),
@@ -246,7 +253,15 @@ class GameApp:
             "card-rogue": lambda: self.select_modal_mode('ROGUE'),
             "card-classic": lambda: self.select_modal_mode('CLASSIC'),
             "btn-mode-deploy": lambda: self.deploy_selected_mode(),
-            "btn-mode-cancel": lambda: self.close_mode_modal()
+            "btn-mode-cancel": lambda: self.close_mode_modal(),
+            # Mobile in-game HUD buttons
+            "btn-mobile-pause": lambda: self.toggle_pause(),
+            "btn-mobile-mode": lambda: self.open_mode_modal(),
+            # Pause modal action buttons
+            "btn-pause-resume": lambda: self.close_pause_modal(),
+            "btn-pause-change-mode": lambda: self.switch_from_pause_to_mode(),
+            "btn-pause-restart": lambda: self.restart_from_pause(),
+            "btn-pause-controls": lambda: self.switch_from_pause_to_controls()
         }
 
         for btn_id, action in button_actions.items():
@@ -356,22 +371,133 @@ class GameApp:
         except Exception:
             pass
 
+    def start_game_from_welcome(self, mode):
+        """Called when PLAY NOW button on Welcome Screen is clicked."""
+        self.audio.init_context()
+        mode_str = str(mode).upper()
+        if mode_str in ['ROGUE', 'CLASSIC']:
+            self.game_mode = mode_str
+            self.selected_modal_mode = mode_str
+
+        # Re-initialize engine for the chosen mode
+        enable_abilities = (self.game_mode == 'ROGUE')
+        self.game = TetrisGame(enable_abilities=enable_abilities)
+        if self.game_mode == 'ROGUE':
+            self.sector_mgr = SectorManager()
+        else:
+            self.sector_mgr = None
+
+        self.game.is_paused = False
+        self.last_frame_time = time.time()
+        self.update_mode_ui_elements()
+        self.update_mobile_controls_ui()
+
+    def toggle_pause(self):
+        """Toggles game pause state and coordinates pause modal and mobile HUD."""
+        self.audio.init_context()
+        self.game.is_paused = not self.game.is_paused
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+
+        if self.game.is_paused:
+            if pause_modal:
+                pause_modal.style.display = "flex"
+            self.vibrate(15)
+        else:
+            if pause_modal:
+                pause_modal.style.display = "none"
+            self.vibrate(10)
+            self.last_frame_time = time.time()
+
+        self.update_mobile_controls_ui()
+
+    def close_pause_modal(self):
+        """Resumes gameplay from pause modal."""
+        self.audio.init_context()
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+        if pause_modal:
+            pause_modal.style.display = "none"
+        self.game.is_paused = False
+        self.last_frame_time = time.time()
+        self.update_mobile_controls_ui()
+
+    def switch_from_pause_to_mode(self):
+        """Switches from pause modal to mode selection modal."""
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+        if pause_modal:
+            pause_modal.style.display = "none"
+        self.open_mode_modal()
+
+    def switch_from_pause_to_controls(self):
+        """Switches from pause modal to controls modal."""
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+        if pause_modal:
+            pause_modal.style.display = "none"
+        self.open_controls_modal()
+
+    def restart_from_pause(self):
+        """Reboots run directly from pause modal."""
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+        if pause_modal:
+            pause_modal.style.display = "none"
+        self.restart_game()
+        self.game.is_paused = False
+        self.last_frame_time = time.time()
+        self.update_mobile_controls_ui()
+
+    def update_mobile_controls_ui(self):
+        """Updates mobile in-game HUD controls (pause icon and mode pill label)."""
+        if not HAS_BROWSER_ENV:
+            return
+        pause_icon = js.document.getElementById("mobilePauseIcon")
+        mode_label = js.document.getElementById("mobileModeLabel")
+        mode_icon = js.document.getElementById("mobileModeIcon")
+        protocol_name = js.document.getElementById("pauseProtocolName")
+        btn_mode = js.document.getElementById("btn-mode")
+
+        if pause_icon:
+            pause_icon.innerText = "▶" if self.game.is_paused else "⏸"
+
+        if self.game_mode == 'ROGUE':
+            if mode_label:
+                mode_label.innerText = "ROGUE"
+            if mode_icon:
+                mode_icon.innerText = "⚔️"
+            if btn_mode:
+                btn_mode.innerText = "MODE: ROGUE"
+            if protocol_name:
+                protocol_name.innerText = "ROGUE PROTOCOL"
+                protocol_name.style.color = "#00f0f0"
+        else:
+            if mode_label:
+                mode_label.innerText = "CLASSIC"
+            if mode_icon:
+                mode_icon.innerText = "♾️"
+            if btn_mode:
+                btn_mode.innerText = "MODE: CLASSIC"
+            if protocol_name:
+                protocol_name.innerText = "CLASSIC MARATHON"
+                protocol_name.style.color = "#ffd700"
+
     def open_controls_modal(self):
         """Opens the Operational Controls modal and pauses gameplay."""
-        modal = js.document.getElementById("controlsModal")
+        modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
         if modal:
             self.game.is_paused = True
             modal.style.display = "flex"
+        self.update_mobile_controls_ui()
 
     def close_controls_modal(self):
         """Closes the Operational Controls modal and resumes gameplay."""
-        modal = js.document.getElementById("controlsModal")
+        modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
         if modal:
             modal.style.display = "none"
             self.game.is_paused = False
+        self.update_mobile_controls_ui()
 
     def toggle_power_drawer(self):
         """Expands or collapses the right-side tactical power drawer."""
+        if not HAS_BROWSER_ENV:
+            return
         drawer = js.document.getElementById("powerDrawer")
         if drawer:
             if drawer.classList.contains("collapsed"):
@@ -381,19 +507,21 @@ class GameApp:
 
     def open_mode_modal(self):
         """Opens the Mode Selection Modal and pauses gameplay."""
-        modal = js.document.getElementById("modeModal")
+        modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
         if modal:
             self.game.is_paused = True
             self.selected_modal_mode = self.game_mode
             self.update_mode_modal_selection()
             modal.style.display = "flex"
+        self.update_mobile_controls_ui()
 
     def close_mode_modal(self):
         """Closes the Mode Selection Modal without changing mode."""
-        modal = js.document.getElementById("modeModal")
+        modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
         if modal:
             modal.style.display = "none"
             self.game.is_paused = False
+        self.update_mobile_controls_ui()
 
     def select_modal_mode(self, mode):
         """Highlights the selected mode card inside the modal."""
@@ -402,6 +530,8 @@ class GameApp:
 
     def update_mode_modal_selection(self):
         """Updates CSS classes on the mode cards in the modal."""
+        if not HAS_BROWSER_ENV:
+            return
         card_rogue = js.document.getElementById("card-rogue")
         card_classic = js.document.getElementById("card-classic")
         if card_rogue and card_classic:
@@ -414,23 +544,20 @@ class GameApp:
 
     def deploy_selected_mode(self):
         """Confirms the selected mode, updates button label, and restarts run."""
-        mode_btn = js.document.getElementById("btn-mode")
         if self.selected_modal_mode != self.game_mode:
             self.game_mode = self.selected_modal_mode
             if self.game_mode == 'ROGUE':
                 self.sector_mgr = SectorManager()
-                if mode_btn:
-                    mode_btn.innerText = "MODE: ROGUE"
             else:
                 self.sector_mgr = None
-                if mode_btn:
-                    mode_btn.innerText = "MODE: CLASSIC"
             self.restart_game()
-        
-        modal = js.document.getElementById("modeModal")
+
+        modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
         if modal:
             modal.style.display = "none"
         self.game.is_paused = False
+        self.update_mode_ui_elements()
+        self.update_mobile_controls_ui()
 
     def restart_game(self):
         """Reboots the game state."""
@@ -451,23 +578,29 @@ class GameApp:
         self.new_high_notified = False
         self.update_relic_modal_ui()
         self.update_mode_ui_elements()
+        self.update_mobile_controls_ui()
 
     def update_mode_ui_elements(self):
         """Hides tactical power drawer and arsenal buttons in Classic mode for a pure distraction-free experience."""
         if not HAS_BROWSER_ENV:
             return
         power_drawer = js.document.getElementById("powerDrawer")
+        mobile_arsenal = js.document.getElementById("btn-mobile-arsenal")
         touch_intel = js.document.getElementById("touch-intel")
         if self.game_mode == 'CLASSIC':
             if power_drawer:
                 power_drawer.style.display = "none"
+            if mobile_arsenal:
+                mobile_arsenal.style.display = "none"
             if touch_intel:
                 touch_intel.style.display = "none"
         else:
             if power_drawer:
-                power_drawer.style.display = "flex"
+                power_drawer.style.display = ""
+            if mobile_arsenal:
+                mobile_arsenal.style.display = ""
             if touch_intel:
-                touch_intel.style.display = "flex"
+                touch_intel.style.display = ""
 
     def process_events(self):
         """Consumes pending game events and triggers audio and visual effects."""

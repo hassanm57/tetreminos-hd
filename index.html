@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=13.0">
+  <link rel="stylesheet" href="style.css?v=14.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -79,14 +79,103 @@
         </svg>
       </button>
 
-      <!-- Loading Screen Overlay -->
-      <div id="loadingOverlay" class="loading-overlay">
-        <div class="cyber-spinner"></div>
-        <div class="loading-title">INITIALIZING MATRIX...</div>
-        <div class="loading-bar-container">
-          <div id="loadingProgressBar" class="loading-progress-bar"></div>
+      <!-- Mobile In-Game Floating HUD Controls (Bottom-Left) -->
+      <div id="mobileGameControls" class="mobile-game-controls">
+        <button id="btn-mobile-pause" class="mobile-ctrl-btn" aria-label="Pause Game" title="Pause Game">
+          <span id="mobilePauseIcon">⏸</span>
+        </button>
+        <button id="btn-mobile-mode" class="mobile-ctrl-pill" aria-label="Change Operational Mode" title="Change Mode">
+          <span id="mobileModeIcon">⚔️</span>
+          <span id="mobileModeLabel">ROGUE</span>
+        </button>
+      </div>
+
+      <!-- Cyberpunk Welcome Screen with Typing Animation, Mode Selector & Play Button -->
+      <div id="welcomeScreen" class="welcome-screen">
+        <div class="welcome-bg-grid"></div>
+        <div class="welcome-scanlines"></div>
+
+        <div class="welcome-container">
+          <div class="welcome-hud-badge">
+            <span class="hud-pulse-dot"></span>
+            <span class="hud-text">TACTICAL POLYOMINO PROTOCOL</span>
+          </div>
+
+          <!-- Typing Animation Area -->
+          <div class="welcome-typing-area">
+            <h1 class="welcome-title">
+              <span id="welcomeLine1" class="typing-text"></span><span id="cursorLine1" class="typing-cursor">_</span>
+            </h1>
+            <div class="welcome-author">
+              <span id="welcomeLine2" class="typing-text"></span><span id="cursorLine2" class="typing-cursor" style="display:none;">_</span>
+            </div>
+          </div>
+
+          <!-- Mode Selector (Rogue default selected) -->
+          <div id="welcomeModeSection" class="welcome-mode-section">
+            <div class="welcome-section-label">⚡ SELECT MISSION PROTOCOL</div>
+            <div class="welcome-modes-grid">
+              <div id="welcome-mode-rogue" class="welcome-mode-card active" data-mode="ROGUE">
+                <div class="welcome-mode-indicator">✓ SELECTED</div>
+                <div class="welcome-mode-icon">⚔️</div>
+                <div class="welcome-mode-info">
+                  <div class="welcome-mode-title">ROGUE PROTOCOL</div>
+                  <div class="welcome-mode-badge">5 SECTORS // RELICS // POWER-UPS</div>
+                  <div class="welcome-mode-desc">Special minos (Bomb, Lightning, Magnet, Cryo, Thermite, Heavy), glitch hazards, and 3-card augment drafts!</div>
+                </div>
+              </div>
+
+              <div id="welcome-mode-classic" class="welcome-mode-card" data-mode="CLASSIC">
+                <div class="welcome-mode-indicator">SELECT</div>
+                <div class="welcome-mode-icon">♾️</div>
+                <div class="welcome-mode-info">
+                  <div class="welcome-mode-title">CLASSIC MARATHON</div>
+                  <div class="welcome-mode-badge">PURE GUIDELINE // HIGH SCORE</div>
+                  <div class="welcome-mode-desc">Standard Guideline Tetris. Accelerating gravity, standard SRS wall kicks, zero power-ups, pure flow.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prominent PLAY Button with Surrounding Cyberpunk Animations -->
+          <div id="welcomePlayContainer" class="welcome-play-container">
+            <div class="play-glow-ring"></div>
+            <div class="play-glow-ring secondary"></div>
+            <div class="cyber-bracket bracket-tl"></div>
+            <div class="cyber-bracket bracket-tr"></div>
+            <div class="cyber-bracket bracket-bl"></div>
+            <div class="cyber-bracket bracket-br"></div>
+
+            <button id="btn-welcome-play" class="welcome-play-btn" disabled>
+              <span class="play-btn-pulse"></span>
+              <span id="welcomePlayText" class="play-btn-text">INITIALIZING MATRIX...</span>
+            </button>
+          </div>
+
+          <!-- Loading Progress Bar (visible during Pyodide load) -->
+          <div id="welcomeStatusContainer" class="welcome-status-container">
+            <div class="welcome-progress-bar-bg">
+              <div id="welcomeProgressBar" class="welcome-progress-bar"></div>
+            </div>
+            <div id="welcomeStatusText" class="welcome-status-text">Connecting to neural grid...</div>
+          </div>
         </div>
-        <div id="loadingStatusText" class="loading-status">Connecting to neural grid...</div>
+      </div>
+
+      <!-- Pause Modal Overlay -->
+      <div id="pauseModal" class="relic-modal pause-modal" style="display: none;">
+        <div class="relic-modal-content pause-modal-content">
+          <div class="pause-header-badge">SYSTEM SUSPENDED</div>
+          <h2 class="relic-header">⏸ OPERATIONAL PAUSE</h2>
+          <p class="relic-sub">ACTIVE PROTOCOL: <strong id="pauseProtocolName" style="color: #00f0f0;">ROGUE PROTOCOL</strong></p>
+
+          <div class="pause-actions-list">
+            <button id="btn-pause-resume" class="cyber-btn deploy-btn pause-action-btn">▶ RESUME GAME</button>
+            <button id="btn-pause-change-mode" class="cyber-btn pause-action-btn">⚡ CHANGE PROTOCOL (MODE)</button>
+            <button id="btn-pause-restart" class="cyber-btn reset-btn pause-action-btn">🔄 REBOOT RUN [R]</button>
+            <button id="btn-pause-controls" class="cyber-btn pause-action-btn">🎮 CONTROLS INTEL</button>
+          </div>
+        </div>
       </div>
 
       <!-- Relic Draft Modal (Rogue Mode) -->
@@ -277,23 +366,156 @@
     </div>
   </aside>
 
-  <!-- Boot script -->
+  <!-- Boot script & Welcome Screen Coordinator -->
   <script>
+    let typingDone = false;
+    let pyodideReady = false;
+    let selectedWelcomeMode = 'ROGUE';
+    window.selectedWelcomeMode = 'ROGUE';
+
+    const line1Target = "Welcome to Tetreminos HD";
+    const line2Target = "made by hassanm57";
+
+    function onTypingCompleted() {
+      if (typingDone) return;
+      typingDone = true;
+      const cursor1 = document.getElementById("cursorLine1");
+      const cursor2 = document.getElementById("cursorLine2");
+      if (cursor1) cursor1.style.display = "none";
+      if (cursor2) cursor2.style.display = "inline-block";
+
+      const modeSection = document.getElementById("welcomeModeSection");
+      const playContainer = document.getElementById("welcomePlayContainer");
+      if (modeSection) modeSection.classList.add("revealed");
+      if (playContainer) playContainer.classList.add("revealed");
+
+      if (pyodideReady) {
+        activatePlayButton();
+      }
+    }
+
+    function fastForwardTyping() {
+      if (typingDone) return;
+      const line1El = document.getElementById("welcomeLine1");
+      const line2El = document.getElementById("welcomeLine2");
+      if (line1El) line1El.textContent = line1Target;
+      if (line2El) line2El.textContent = line2Target;
+      onTypingCompleted();
+    }
+
+    function activatePlayButton() {
+      const btn = document.getElementById("btn-welcome-play");
+      const btnText = document.getElementById("welcomePlayText");
+      const statusContainer = document.getElementById("welcomeStatusContainer");
+      if (!btn || !btnText) return;
+
+      btn.disabled = false;
+      btn.classList.add("ready");
+      btnText.innerText = "▶ PLAY NOW";
+      if (statusContainer) {
+        statusContainer.style.opacity = "0";
+        setTimeout(() => {
+          statusContainer.style.display = "none";
+        }, 300);
+      }
+    }
+
+    function selectWelcomeMode(mode) {
+      fastForwardTyping();
+      selectedWelcomeMode = mode;
+      window.selectedWelcomeMode = mode;
+      const rogueCard = document.getElementById("welcome-mode-rogue");
+      const classicCard = document.getElementById("welcome-mode-classic");
+      if (rogueCard && classicCard) {
+        const rogueInd = rogueCard.querySelector(".welcome-mode-indicator");
+        const classicInd = classicCard.querySelector(".welcome-mode-indicator");
+        if (mode === 'ROGUE') {
+          rogueCard.classList.add("active");
+          classicCard.classList.remove("active");
+          if (rogueInd) rogueInd.innerText = "✓ SELECTED";
+          if (classicInd) classicInd.innerText = "SELECT";
+        } else {
+          classicCard.classList.add("active");
+          rogueCard.classList.remove("active");
+          if (classicInd) classicInd.innerText = "✓ SELECTED";
+          if (rogueInd) rogueInd.innerText = "SELECT";
+        }
+      }
+    }
+
+    function onWelcomePlayClicked() {
+      const welcomeScreen = document.getElementById("welcomeScreen");
+      if (window.tetrisApp) {
+        if (window.tetrisApp.start_game_from_welcome) {
+          window.tetrisApp.start_game_from_welcome(selectedWelcomeMode);
+        } else {
+          if (window.tetrisApp.audio) window.tetrisApp.audio.init_context();
+          if (window.tetrisApp.deploy_selected_mode) {
+            window.tetrisApp.selected_modal_mode = selectedWelcomeMode;
+            window.tetrisApp.deploy_selected_mode();
+          }
+          window.tetrisApp.game.is_paused = false;
+        }
+      }
+      if (welcomeScreen) {
+        welcomeScreen.classList.add("fade-out");
+        setTimeout(() => {
+          welcomeScreen.style.display = "none";
+        }, 400);
+      }
+    }
+
+    function startWelcomeTyping() {
+      const line1El = document.getElementById("welcomeLine1");
+      const line2El = document.getElementById("welcomeLine2");
+      const cursor1 = document.getElementById("cursorLine1");
+      const cursor2 = document.getElementById("cursorLine2");
+      if (!line1El || !line2El) return;
+
+      let idx1 = 0;
+      let idx2 = 0;
+
+      function typeLine1() {
+        if (typingDone) return;
+        if (idx1 < line1Target.length) {
+          line1El.textContent += line1Target.charAt(idx1);
+          idx1++;
+          setTimeout(typeLine1, 30 + Math.random() * 12);
+        } else {
+          if (cursor1) cursor1.style.display = "none";
+          if (cursor2) cursor2.style.display = "inline-block";
+          setTimeout(typeLine2, 200);
+        }
+      }
+
+      function typeLine2() {
+        if (typingDone) return;
+        if (idx2 < line2Target.length) {
+          line2El.textContent += line2Target.charAt(idx2);
+          idx2++;
+          setTimeout(typeLine2, 34 + Math.random() * 14);
+        } else {
+          onTypingCompleted();
+        }
+      }
+
+      setTimeout(typeLine1, 140);
+    }
+
     async function bootEngine() {
-      const progressBar = document.getElementById("loadingProgressBar");
-      const statusText = document.getElementById("loadingStatusText");
-      const overlay = document.getElementById("loadingOverlay");
+      const progressBar = document.getElementById("welcomeProgressBar");
+      const statusText = document.getElementById("welcomeStatusText");
 
       try {
-        statusText.innerText = "Calibrating neon matrix...";
-        progressBar.style.width = "30%";
+        if (statusText) statusText.innerText = "Calibrating neon matrix...";
+        if (progressBar) progressBar.style.width = "30%";
 
         const pyodide = await loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
         });
 
-        statusText.innerText = "Loading polyomino core...";
-        progressBar.style.width = "60%";
+        if (statusText) statusText.innerText = "Loading polyomino core...";
+        if (progressBar) progressBar.style.width = "60%";
 
         const coreFiles = [
           "config.py",
@@ -312,7 +534,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=13.0`);
+          const response = await fetch(`./src/${fileName}?v=14.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -320,8 +542,8 @@
           pyodide.FS.writeFile(`/src/${fileName}`, code);
         }
 
-        statusText.innerText = "Synchronizing audio synthesizers...";
-        progressBar.style.width = "90%";
+        if (statusText) statusText.innerText = "Synchronizing audio synthesizers...";
+        if (progressBar) progressBar.style.width = "90%";
 
         // Initialize core application
         await pyodide.runPythonAsync(`
@@ -331,20 +553,19 @@ if "/src" not in sys.path:
 import main
         `);
 
-        progressBar.style.width = "100%";
-        statusText.innerText = "System online! Ready to play.";
+        if (progressBar) progressBar.style.width = "100%";
+        if (statusText) statusText.innerText = "System online! Ready to deploy.";
 
-        setTimeout(() => {
-          overlay.style.opacity = "0";
-          overlay.style.pointerEvents = "none";
-          setTimeout(() => {
-            overlay.style.display = "none";
-          }, 400);
-        }, 300);
+        pyodideReady = true;
+        if (typingDone) {
+          activatePlayButton();
+        }
 
       } catch (err) {
         console.error("Boot error:", err);
-        statusText.innerHTML = `<span style="color:#ff0055">System initialization error. Please refresh.</span>`;
+        if (statusText) {
+          statusText.innerHTML = `<span style="color:#ff0055">System initialization error. Please refresh.</span>`;
+        }
       }
     }
 
@@ -372,7 +593,7 @@ import main
       }
 
       function isInteractiveUI(e) {
-        return !!(e.target && e.target.closest && e.target.closest('button, .relic-modal, .mode-modal, .controls-modal, .drawer-tab'));
+        return !!(e.target && e.target.closest && e.target.closest('button, .relic-modal, .mode-modal, .controls-modal, .pause-modal, .drawer-tab, .mobile-game-controls, .mobile-ctrl-btn, .mobile-ctrl-pill, .mobile-arsenal-btn, .welcome-screen, .welcome-mode-card'));
       }
 
       function handleTouchStart(e) {
@@ -580,9 +801,42 @@ import main
           }
         });
       }
-    });
 
-    window.addEventListener("DOMContentLoaded", bootEngine);
+      // Welcome Screen Mode Selection & Play Coordinator
+      const welcomeRogue = document.getElementById("welcome-mode-rogue");
+      const welcomeClassic = document.getElementById("welcome-mode-classic");
+      const welcomePlayBtn = document.getElementById("btn-welcome-play");
+      const welcomeScreen = document.getElementById("welcomeScreen");
+
+      if (welcomeRogue) {
+        welcomeRogue.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectWelcomeMode("ROGUE");
+        });
+      }
+      if (welcomeClassic) {
+        welcomeClassic.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectWelcomeMode("CLASSIC");
+        });
+      }
+      if (welcomePlayBtn) {
+        welcomePlayBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          onWelcomePlayClicked();
+        });
+      }
+      if (welcomeScreen) {
+        welcomeScreen.addEventListener("click", (e) => {
+          if (!typingDone && !e.target.closest('#welcomeModeSection') && !e.target.closest('#welcomePlayContainer')) {
+            fastForwardTyping();
+          }
+        });
+      }
+
+      startWelcomeTyping();
+      bootEngine();
+    });
   </script>
 </body>
 </html>
