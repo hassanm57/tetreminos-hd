@@ -27,8 +27,8 @@ const SPREADSHEET_CLASSIC = "ClassicLeaderboard";
 const CREATOR_NAME = "hassanm57";
 
 // High scores for the Creator & Champion
-const CREATOR_ROGUE_SCORE = 9412;   // High Score Record
-const CREATOR_CLASSIC_SCORE = 9412; // High Score Record
+const CREATOR_ROGUE_SCORE = 102521;   // High Score Record
+const CREATOR_CLASSIC_SCORE = 102521; // High Score Record
 
 /**
  * Handles GET requests: returns top 50 scores for the requested mode.
@@ -192,11 +192,11 @@ function initSheetsIfNeeded() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
   ensureSheetWithSeed(ss, SPREADSHEET_ROGUE, [
-    ["creator_root", "hassanm57", CREATOR_ROGUE_SCORE, "SECTOR 3", 28, "2026-10-02"]
+    ["creator_root", "hassanm57", CREATOR_ROGUE_SCORE, "SECTOR 4", 58, "2026-10-02"]
   ]);
   
   ensureSheetWithSeed(ss, SPREADSHEET_CLASSIC, [
-    ["creator_root", "hassanm57", CREATOR_CLASSIC_SCORE, "LEVEL 5", 28, "2026-10-02"]
+    ["creator_root", "hassanm57", CREATOR_CLASSIC_SCORE, "LEVEL 11", 104, "2026-10-02"]
   ]);
 }
 

@@ -15,10 +15,10 @@ const CREATOR_CALLSIGN = "hassanm57";
 // Default Matrix High Scores: Only #1 Creator & Champion hassanm57
 const DEFAULT_LEADERBOARDS = {
   ROGUE: [
-    { rank: 1, name: "hassanm57", score: 9412, stage: "SECTOR 3", lines: 28, date: "2026-10-02", isCreator: true }
+    { rank: 1, name: "hassanm57", score: 102521, stage: "SECTOR 4", lines: 58, date: "2026-10-02", isCreator: true }
   ],
   CLASSIC: [
-    { rank: 1, name: "hassanm57", score: 9412, stage: "LEVEL 5", lines: 28, date: "2026-10-02", isCreator: true }
+    { rank: 1, name: "hassanm57", score: 102521, stage: "LEVEL 11", lines: 104, date: "2026-10-02", isCreator: true }
   ]
 };
 
@@ -299,17 +299,19 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
   return { success: true, rank: list.findIndex(item => item.name.toLowerCase() === name.toLowerCase()) + 1 };
 }
 
-const LB_CACHE_KEY_VERSION = "v3";
+const LB_CACHE_KEY_VERSION = "v4";
 
-// Clean obsolete legacy leaderboard caches and sync high score to 9412
+// Clean obsolete legacy leaderboard caches and sync high score to 102521
 try {
   localStorage.removeItem("tetremino_lb_rogue");
   localStorage.removeItem("tetremino_lb_classic");
   localStorage.removeItem("tetremino_lb_v2_rogue");
   localStorage.removeItem("tetremino_lb_v2_classic");
+  localStorage.removeItem("tetremino_lb_v3_rogue");
+  localStorage.removeItem("tetremino_lb_v3_classic");
   const curHigh = parseInt(localStorage.getItem("tetremino_high_score") || "0", 10);
-  if (curHigh < 9412) {
-    localStorage.setItem("tetremino_high_score", "9412");
+  if (curHigh < 102521) {
+    localStorage.setItem("tetremino_high_score", "102521");
   }
 } catch (e) {}
 

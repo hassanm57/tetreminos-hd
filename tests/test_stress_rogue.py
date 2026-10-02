@@ -89,7 +89,7 @@ class TestRogueModeStressAndGameOver(unittest.TestCase):
 
         # Verify renderer handles game_over state without crashing in Rogue mode
         for _ in range(30):
-            self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=9412)
+            self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=102521)
 
     def test_rogue_line_clearing_and_relic_draft_progression(self):
         """Stress tests advancing through all 5 sectors, drafting relics, and triggering abilities."""
@@ -138,7 +138,7 @@ class TestRogueModeStressAndGameOver(unittest.TestCase):
             self.assertIn(sec, [1, 2, 3, 4, 5])
 
             # Render Game Over frame
-            self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=9412)
+            self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=102521)
 
     def test_all_ability_detonations_under_heavy_load(self):
         """Trigger rapid detonations of all ability types simultaneously."""
@@ -164,7 +164,7 @@ class TestRogueModeStressAndGameOver(unittest.TestCase):
             # Render 10 frames of each effect
             for _ in range(10):
                 self.renderer.update_particles(0.016)
-                self.renderer.render(self.ctx, game, SectorManager(), game_mode='ROGUE', high_score=9412)
+                self.renderer.render(self.ctx, game, SectorManager(), game_mode='ROGUE', high_score=102521)
 
     def test_simulate_10000_game_frames(self):
         """Simulate 10,000 game loop frames of Rogue mode physics and rendering."""
@@ -196,7 +196,7 @@ class TestRogueModeStressAndGameOver(unittest.TestCase):
 
             # Every 500 frames, render to mock context
             if frame % 500 == 0:
-                self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=9412)
+                self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=102521)
 
         self.assertTrue(True, "10,000 frames completed smoothly without hanging or crash")
 
@@ -232,7 +232,7 @@ class TestRogueModeStressAndGameOver(unittest.TestCase):
             self.renderer.update_particles(0.016)
 
             if piece_num % 50 == 0:
-                self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=9412)
+                self.renderer.render(self.ctx, game, sm, game_mode='ROGUE', high_score=102521)
 
 
 if __name__ == '__main__':
