@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=22.0">
+  <link rel="stylesheet" href="style.css?v=23.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -79,10 +79,16 @@
       <div class="header-controls">
         <button id="btn-leaderboard" class="cyber-btn lb-header-btn">🏆 LEADERBOARD</button>
         <button id="btn-controls" class="cyber-btn">CONTROLS [?]</button>
+        <button id="btn-header-pause" class="cyber-btn pause-header-btn" title="Pause Game [Esc]">⏸️ PAUSE [ESC]</button>
         <button id="btn-mode" class="cyber-btn mode-btn">MODE: ROGUE</button>
         <button id="btn-restart" class="cyber-btn reset-btn">REBOOT [R]</button>
       </div>
     </header>
+
+    <!-- Desktop Esc to Pause Bar -->
+    <div class="desktop-pause-bar desktop-only">
+      <span class="esc-kbd-badge"><kbd class="esc-key">ESC</kbd> TO PAUSE</span>
+    </div>
 
     <!-- Canvas Frame -->
     <div class="canvas-container">
@@ -198,6 +204,7 @@
 
           <div class="pause-actions-list">
             <button id="btn-pause-resume" class="cyber-btn deploy-btn pause-action-btn">▶ RESUME GAME</button>
+            <button id="btn-pause-title" class="cyber-btn pause-action-btn pause-title-btn">🏠 TITLE SCREEN</button>
             <button id="btn-pause-leaderboard" class="cyber-btn pause-action-btn">🏆 GLOBAL LEADERBOARD</button>
             <button id="btn-pause-change-mode" class="cyber-btn pause-action-btn">⚡ CHANGE PROTOCOL (MODE)</button>
             <button id="btn-pause-restart" class="cyber-btn reset-btn pause-action-btn">🔄 REBOOT RUN [R]</button>
@@ -529,6 +536,11 @@
     }
 
     function onWelcomePlayClicked() {
+      // 1. Mandatory Callsign Check: Never allow entering the game without entering a callsign
+      if (window.verifyOrPromptCallsign && !window.verifyOrPromptCallsign()) {
+        return;
+      }
+
       const welcomeScreen = document.getElementById("welcomeScreen");
       if (window.tetrisApp) {
         if (window.tetrisApp.start_game_from_welcome) {
@@ -549,6 +561,41 @@
         }, 400);
       }
     }
+
+    window.showTitleScreen = function() {
+      const welcomeScreen = document.getElementById("welcomeScreen");
+      const pauseModal = document.getElementById("pauseModal");
+      const relicModal = document.getElementById("relicModal");
+      const modeModal = document.getElementById("modeModal");
+      const controlsModal = document.getElementById("controlsModal");
+      const lbModal = document.getElementById("leaderboardModal");
+
+      if (pauseModal) pauseModal.style.display = "none";
+      if (relicModal) relicModal.style.display = "none";
+      if (modeModal) modeModal.style.display = "none";
+      if (controlsModal) controlsModal.style.display = "none";
+      if (lbModal) lbModal.style.display = "none";
+
+      if (window.tetrisApp) {
+        window.tetrisApp.restart_game();
+        window.tetrisApp.game.is_paused = true;
+      }
+
+      if (welcomeScreen) {
+        welcomeScreen.classList.remove("fade-out");
+        welcomeScreen.style.display = "flex";
+        if (typeof fastForwardTyping === 'function') fastForwardTyping();
+        if (typeof activatePlayButton === 'function') activatePlayButton();
+        if (typeof updateCallsignUI === 'function') updateCallsignUI();
+        const callsignInput = document.getElementById("playerCallsignInput");
+        if (callsignInput) {
+          setTimeout(() => {
+            callsignInput.focus();
+            callsignInput.select();
+          }, 150);
+        }
+      }
+    };
 
     function startWelcomeTyping() {
       const line1El = document.getElementById("welcomeLine1");
@@ -619,7 +666,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=22.0`);
+          const response = await fetch(`./src/${fileName}?v=23.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -919,10 +966,34 @@ import main
         });
       }
 
+      // Pause Modal: Title Screen button
+      const btnPauseTitle = document.getElementById("btn-pause-title");
+      if (btnPauseTitle) {
+        btnPauseTitle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (window.tetrisApp && window.tetrisApp.return_to_title_screen) {
+            window.tetrisApp.return_to_title_screen();
+          } else {
+            window.showTitleScreen();
+          }
+        });
+      }
+
+      // Desktop Header: Pause button
+      const btnHeaderPause = document.getElementById("btn-header-pause");
+      if (btnHeaderPause) {
+        btnHeaderPause.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (window.tetrisApp) {
+            window.tetrisApp.toggle_pause();
+          }
+        });
+      }
+
       startWelcomeTyping();
       bootEngine();
     });
   </script>
-  <script src="leaderboard.js?v=22.0"></script>
+  <script src="leaderboard.js?v=23.0"></script>
 </body>
 </html>

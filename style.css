@@ -1882,6 +1882,80 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* Desktop Esc to Pause Indicator & Button */
+.pause-header-btn {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.pause-header-btn:hover {
+  background: #38bdf8;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.desktop-pause-bar {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 750px;
+  margin-bottom: 6px;
+  padding-right: 4px;
+}
+
+.esc-kbd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1.5px;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.08);
+}
+
+.esc-key {
+  background: #1e293b;
+  color: #00f0ff;
+  font-family: 'Neuropol', 'Orbitron', monospace;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  border: 1px solid #00f0ff;
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.35);
+}
+
+/* Pause Modal: Title Screen button */
+.pause-title-btn {
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
+.pause-title-btn:hover {
+  background: #38bdf8 !important;
+  color: #000000 !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.5) !important;
+}
+
+/* Mandatory Callsign Error & Shake Animation */
+@keyframes callsignShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+.input-error-shake {
+  animation: callsignShake 0.4s ease;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6) !important;
+}
+
 @media (max-width: 600px) {
   .welcome-callsign-section {
     max-width: 280px;

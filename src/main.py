@@ -304,11 +304,14 @@ class GameApp:
             "card-classic": lambda: self.select_modal_mode('CLASSIC'),
             "btn-mode-deploy": lambda: self.deploy_selected_mode(),
             "btn-mode-cancel": lambda: self.close_mode_modal(),
+            # Header pause button
+            "btn-header-pause": lambda: self.toggle_pause(),
             # Mobile in-game HUD buttons
             "btn-mobile-pause": lambda: self.toggle_pause(),
             "btn-mobile-mode": lambda: self.open_mode_modal(),
             # Pause modal action buttons
             "btn-pause-resume": lambda: self.close_pause_modal(),
+            "btn-pause-title": lambda: self.return_to_title_screen(),
             "btn-pause-change-mode": lambda: self.switch_from_pause_to_mode(),
             "btn-pause-restart": lambda: self.restart_from_pause(),
             "btn-pause-controls": lambda: self.switch_from_pause_to_controls()
@@ -493,6 +496,21 @@ class GameApp:
         self.game.is_paused = False
         self.last_frame_time = time.time()
         self.update_mobile_controls_ui()
+
+    def return_to_title_screen(self):
+        """Returns player to Title/Welcome Screen to enter callsign or change mode."""
+        self.audio.init_context()
+        pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+        if pause_modal:
+            pause_modal.style.display = "none"
+        self.restart_game()
+        self.game.is_paused = True
+        self.update_mobile_controls_ui()
+        if HAS_BROWSER_ENV and hasattr(js, 'window') and hasattr(js.window, 'showTitleScreen'):
+            try:
+                js.window.showTitleScreen()
+            except Exception:
+                pass
 
     def update_mobile_controls_ui(self):
         """Updates mobile in-game HUD controls (pause icon and mode pill label)."""

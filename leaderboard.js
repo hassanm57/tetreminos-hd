@@ -48,16 +48,78 @@ function getOrCreatePilotId() {
 /**
  * Retrieves the current player's confirmed callsign.
  */
-function getPilotCallsign() {
+function getConfirmedCallsign() {
   try {
     const saved = localStorage.getItem("tetremino_callsign");
     if (saved && saved.trim()) {
       return saved.trim();
     }
   } catch (e) {}
+  return "";
+}
+
+function hasConfirmedCallsign() {
+  const callsign = getConfirmedCallsign();
+  return !!(callsign && callsign.length >= 2);
+}
+
+function getPilotCallsign() {
+  const confirmed = getConfirmedCallsign();
+  if (confirmed) return confirmed;
   const id = getOrCreatePilotId();
   return "PILOT_" + id.slice(-4).toUpperCase();
 }
+
+function verifyOrPromptCallsign() {
+  const inputEl = document.getElementById("playerCallsignInput");
+  const feedbackEl = document.getElementById("callsignFeedback");
+  const val = inputEl ? inputEl.value.trim() : "";
+
+  // 1. If player typed a name, validate and save it
+  if (val.length > 0) {
+    const res = setPilotCallsign(val);
+    if (!res.valid) {
+      if (feedbackEl) {
+        feedbackEl.innerText = res.message;
+        feedbackEl.className = "callsign-feedback error";
+      }
+      if (inputEl) {
+        inputEl.classList.remove("input-error-shake");
+        void inputEl.offsetWidth;
+        inputEl.classList.add("input-error-shake");
+        inputEl.focus();
+      }
+      return false;
+    }
+    if (feedbackEl) {
+      feedbackEl.innerText = `✓ Callsign confirmed: ${res.callsign}`;
+      feedbackEl.className = "callsign-feedback success";
+      inputEl.classList.remove("input-error-shake");
+    }
+    return true;
+  }
+
+  // 2. If input was empty, verify whether a previously confirmed callsign exists
+  if (hasConfirmedCallsign()) {
+    return true;
+  }
+
+  // 3. No callsign entered! Strictly block game entry
+  if (feedbackEl) {
+    feedbackEl.innerText = "⚠️ Callsign required! Please enter your callsign to enter the Matrix.";
+    feedbackEl.className = "callsign-feedback error";
+  }
+  if (inputEl) {
+    inputEl.classList.remove("input-error-shake");
+    void inputEl.offsetWidth;
+    inputEl.classList.add("input-error-shake");
+    inputEl.focus();
+  }
+  return false;
+}
+
+window.hasConfirmedCallsign = hasConfirmedCallsign;
+window.verifyOrPromptCallsign = verifyOrPromptCallsign;
 
 /**
  * Validates whether a callsign is allowed and available.
@@ -372,15 +434,20 @@ async function renderLeaderboardTable(mode) {
 }
 
 function updateCallsignUI() {
-  const currentName = getPilotCallsign();
+  const confirmed = getConfirmedCallsign();
   const inputEl = document.getElementById("playerCallsignInput");
   const lbPilotEl = document.getElementById("lbCurrentPilotName");
 
   if (inputEl && document.activeElement !== inputEl) {
-    inputEl.value = currentName;
+    if (confirmed) {
+      inputEl.value = confirmed;
+    } else {
+      inputEl.value = "";
+      inputEl.placeholder = "ENTER YOUR CALLSIGN (REQUIRED)...";
+    }
   }
   if (lbPilotEl) {
-    lbPilotEl.innerText = currentName;
+    lbPilotEl.innerText = confirmed || "UNREGISTERED PILOT";
   }
 }
 
@@ -427,9 +494,13 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!res.valid) {
             callsignFeedback.innerText = res.message;
             callsignFeedback.className = "callsign-feedback error";
+            callsignInput.classList.remove("input-error-shake");
+            void callsignInput.offsetWidth;
+            callsignInput.classList.add("input-error-shake");
           } else {
             callsignFeedback.innerText = `✓ Callsign set to: ${res.callsign}`;
             callsignFeedback.className = "callsign-feedback success";
+            callsignInput.classList.remove("input-error-shake");
           }
         }
         callsignInput.blur();
@@ -440,6 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
     callsignInput.addEventListener("keypress", stopPropagation);
 
     callsignInput.addEventListener("input", (e) => {
+      callsignInput.classList.remove("input-error-shake");
       const val = e.target.value.trim();
       if (!val) {
         if (callsignFeedback) callsignFeedback.innerText = "";
