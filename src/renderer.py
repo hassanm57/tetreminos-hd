@@ -1327,42 +1327,103 @@ class CanvasRenderer:
 
         if ability != ABILITY_NONE and ability in ABILITY_INFO:
             info = ABILITY_INFO[ability]
-            ability_color = info['color']
+            ability_color = info.get('color', '#00ffff')
+            if ability == 'HEAVY' and ability_color == '#708090':
+                ability_color = '#f59e0b'
             pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0  # 0.0 to 1.0
 
-            # 1. Dark high-contrast energy core
-            ctx.fillStyle = '#02040a'
-            ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
+            cx = x + (BLOCK_SIZE / 2.0)
+            cy = y + (BLOCK_SIZE / 2.0)
 
-            # 2. Glowing animated outer neon halo
+            # 1. PROMINENT RADIANT GLOW AURA AROUND THE BLOCK
+            glow_r = (BLOCK_SIZE / 2.0) + 7.0 + 3.0 * pulse
+            ctx.beginPath()
+            ctx.arc(cx, cy, glow_r, 0, math.pi * 2)
+            if hasattr(ctx, 'createRadialGradient'):
+                glow_grad = ctx.createRadialGradient(cx, cy, (BLOCK_SIZE / 2.0) - 3.0, cx, cy, glow_r)
+                glow_grad.addColorStop(0.0, ability_color)
+                glow_grad.addColorStop(0.5, ability_color)
+                glow_grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)')
+                ctx.globalAlpha = 0.45 + 0.25 * pulse
+                ctx.fillStyle = glow_grad
+            else:
+                ctx.globalAlpha = 0.25 + 0.15 * pulse
+                ctx.fillStyle = ability_color
+            ctx.fill()
+
+            # 2. Outer luminous halo stroke expanding beyond cell boundaries
+            ctx.globalAlpha = 0.55 + 0.35 * pulse
             ctx.strokeStyle = ability_color
             if not self.is_mobile:
                 ctx.shadowColor = ability_color
-                ctx.shadowBlur = int(8 + 8 * pulse)
-            ctx.lineWidth = 2.5
+                ctx.shadowBlur = int(14 + 10 * pulse)
+            ctx.lineWidth = 2.0
+            ctx.strokeRect(x - 1.5, y - 1.5, BLOCK_SIZE + 3, BLOCK_SIZE + 3)
+
+            # 3. High-contrast cyber-core base with ability ambient tint wash
+            ctx.globalAlpha = 1.0
+            ctx.fillStyle = '#030712'
+            ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
+
+            # Inner ambient color wash
+            ctx.globalAlpha = 0.25 + 0.15 * pulse
+            ctx.fillStyle = ability_color
+            ctx.fillRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4)
+
+            # 4. Searing inner neon border
+            ctx.globalAlpha = 1.0
+            ctx.strokeStyle = ability_color
+            if not self.is_mobile:
+                ctx.shadowColor = ability_color
+                ctx.shadowBlur = int(10 + 8 * pulse)
+            ctx.lineWidth = 2.8
             ctx.strokeRect(x + 1.5, y + 1.5, BLOCK_SIZE - 3, BLOCK_SIZE - 3)
 
-            # 3. Inner circular energy core
-            cx = x + (BLOCK_SIZE / 2)
-            cy = y + (BLOCK_SIZE / 2)
+            # 5. Pulsing corner energy brackets
+            ctx.strokeStyle = '#ffffff'
+            ctx.lineWidth = 1.8
+            bracket_len = 5.0
+            ctx.globalAlpha = 0.70 + 0.30 * pulse
+            # Top-left corner
             ctx.beginPath()
-            ctx.arc(cx, cy, (BLOCK_SIZE / 2) - 3, 0, math.pi * 2)
-            ctx.fillStyle = f"rgba(255, 255, 255, {0.12 + 0.12 * pulse})"
+            ctx.moveTo(x + 2, y + 2 + bracket_len)
+            ctx.lineTo(x + 2, y + 2)
+            ctx.lineTo(x + 2 + bracket_len, y + 2)
+            # Top-right corner
+            ctx.moveTo(x + BLOCK_SIZE - 2 - bracket_len, y + 2)
+            ctx.lineTo(x + BLOCK_SIZE - 2, y + 2)
+            ctx.lineTo(x + BLOCK_SIZE - 2, y + 2 + bracket_len)
+            # Bottom-left corner
+            ctx.moveTo(x + 2, y + BLOCK_SIZE - 2 - bracket_len)
+            ctx.lineTo(x + 2, y + BLOCK_SIZE - 2)
+            ctx.lineTo(x + 2 + bracket_len, y + BLOCK_SIZE - 2)
+            # Bottom-right corner
+            ctx.moveTo(x + BLOCK_SIZE - 2 - bracket_len, y + BLOCK_SIZE - 2)
+            ctx.lineTo(x + BLOCK_SIZE - 2, y + BLOCK_SIZE - 2)
+            ctx.lineTo(x + BLOCK_SIZE - 2, y + BLOCK_SIZE - 2 - bracket_len)
+            ctx.stroke()
+
+            # 6. Inner circular reactor core
+            ctx.globalAlpha = 0.85
+            ctx.beginPath()
+            ctx.arc(cx, cy, (BLOCK_SIZE / 2.0) - 3.5, 0, math.pi * 2)
+            ctx.fillStyle = f"rgba(255, 255, 255, {0.10 + 0.10 * pulse})"
             ctx.fill()
             ctx.strokeStyle = ability_color
             ctx.lineWidth = 1.5
             ctx.stroke()
 
-            # 4. CRISP, 100% OPACITY, BOLD ICON
+            # 7. Crisp, bold, 100% visible icon
+            ctx.globalAlpha = 1.0
             if not self.is_mobile:
-                ctx.shadowBlur = 4
-                ctx.shadowColor = '#ffffff'
+                ctx.shadowBlur = 6
+                ctx.shadowColor = ability_color
             ctx.font = 'bold 18px sans-serif'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
             ctx.fillText(info['symbol'], cx, cy + 1)
 
-            # 5. If burning block has active fuse, draw fuse progress indicator
+            # 8. Active fuse indicator if burning mino
             if burn_timer is not None:
                 fuse_pct = max(0.0, min(1.0, burn_timer / 3.0))
                 ctx.fillStyle = '#ff2200'
@@ -1442,15 +1503,26 @@ class CanvasRenderer:
             info = ABILITY_INFO.get(game.next_queue[0].ability)
             if info:
                 ctx.save()
-                pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
-                ctx.strokeStyle = info['color']
-                ctx.lineWidth = 2
-                ctx.shadowColor = info['color']
-                ctx.shadowBlur = int(8 + 8 * pulse)
+                pulse = (math.sin(time.time() * 7.0) + 1.0) / 2.0
+                p_color = info.get('color', '#ff0055')
+                if game.next_queue[0].ability == 'HEAVY' and p_color == '#708090':
+                    p_color = '#f59e0b'
+
+                # Glowing outer alert aura around upcoming piece slot
+                ctx.strokeStyle = p_color
+                ctx.lineWidth = 2.5
+                if not self.is_mobile:
+                    ctx.shadowColor = p_color
+                    ctx.shadowBlur = int(14 + 10 * pulse)
                 ctx.strokeRect(px + 8, py + 36, 114, 68)
-                ctx.font = 'bold 9px "Neuropol", "Orbitron", sans-serif'
-                ctx.fillStyle = info['color']
-                ctx.fillText(f"⚡ {info['name'].upper()} ⚡", px + 65, py + 98)
+
+                # Radiant alert header banner
+                ctx.fillStyle = p_color
+                ctx.fillRect(px + 8, py + 36, 114, 16)
+                ctx.fillStyle = '#000000'
+                ctx.font = 'bold 9.5px "Neuropol", "Orbitron", sans-serif'
+                ctx.textAlign = 'center'
+                ctx.fillText(f"⚡ {info['name'].upper()} READY ⚡", px + 65, py + 47)
                 ctx.restore()
 
         # Preview next 4 pieces
@@ -1476,22 +1548,54 @@ class CanvasRenderer:
             if is_ability_block:
                 info = ABILITY_INFO.get(piece.ability, {})
                 acolor = info.get('color', '#ff0055')
-                # Completely unique mini power block
+                if piece.ability == 'HEAVY' and acolor == '#708090':
+                    acolor = '#f59e0b'
+                pulse = (math.sin(time.time() * 6.0) + 1.0) / 2.0
+                cx = mx + (mini_size / 2.0)
+                cy = my + (mini_size / 2.0)
+
+                # Outer glowing aura around the mini power block
                 ctx.save()
+                glow_r = (mini_size / 2.0) + (4.0 if mini_size >= 15 else 3.0) + 2.0 * pulse
+                ctx.beginPath()
+                ctx.arc(cx, cy, glow_r, 0, math.pi * 2)
+                if hasattr(ctx, 'createRadialGradient'):
+                    glow_grad = ctx.createRadialGradient(cx, cy, mini_size / 3.0, cx, cy, glow_r)
+                    glow_grad.addColorStop(0.0, acolor)
+                    glow_grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)')
+                    ctx.globalAlpha = 0.55 + 0.30 * pulse
+                    ctx.fillStyle = glow_grad
+                else:
+                    ctx.globalAlpha = 0.30 + 0.15 * pulse
+                    ctx.fillStyle = acolor
+                ctx.fill()
+
+                # High contrast dark core with neon border
+                ctx.globalAlpha = 1.0
                 ctx.fillStyle = '#02040a'
                 ctx.fillRect(mx, my, mini_size - 1, mini_size - 1)
+
+                # Ambient color wash inside mini block
+                ctx.globalAlpha = 0.30 + 0.15 * pulse
+                ctx.fillStyle = acolor
+                ctx.fillRect(mx + 1, my + 1, mini_size - 2, mini_size - 2)
+
+                # Neon border
+                ctx.globalAlpha = 1.0
                 ctx.strokeStyle = acolor
-                ctx.shadowColor = acolor
-                ctx.shadowBlur = 6
-                ctx.lineWidth = 1.5
-                ctx.strokeRect(mx + 0.5, my + 0.5, mini_size - 2, mini_size - 2)
-                
+                if not self.is_mobile:
+                    ctx.shadowColor = acolor
+                    ctx.shadowBlur = 8
+                ctx.lineWidth = 1.8
+                ctx.strokeRect(mx + 0.5, my + 0.5, mini_size - 1, mini_size - 1)
+
                 # Crisp bold icon
-                icon_sz = 10 if mini_size < 15 else 12
+                icon_sz = 11 if mini_size < 15 else 13
                 ctx.font = f'bold {icon_sz}px sans-serif'
                 ctx.textAlign = 'center'
                 ctx.textBaseline = 'middle'
-                ctx.fillText(info.get('symbol', '⚡'), mx + mini_size / 2, my + mini_size / 2)
+                ctx.fillStyle = '#ffffff'
+                ctx.fillText(info.get('symbol', '⚡'), cx, cy + 0.5)
                 ctx.restore()
             else:
                 ctx.fillStyle = piece.color
@@ -1536,29 +1640,62 @@ class CanvasRenderer:
 
         # 2. NEXT Box (Top-Right: x=canvas_w - 68, y=6, w=60, h=62)
         nx, ny, nw, nh = canvas_w - 68, 6, 60, 62
-        ctx.fillStyle = '#0c0e14'
-        ctx.fillRect(nx, ny, nw, nh)
-
         has_power_next = (len(game.next_queue) > 0 and game.next_queue[0].ability != ABILITY_NONE)
+
+        ctx.save()
         if has_power_next:
             info = ABILITY_INFO.get(game.next_queue[0].ability, {})
             p_color = info.get('color', '#ff0055')
+            if game.next_queue[0].ability == 'HEAVY' and p_color == '#708090':
+                p_color = '#f59e0b'
+            pulse = (math.sin(time.time() * 7.0) + 1.0) / 2.0  # Energetic alert pulse
+
+            # 1. Outer radiant glow halo around the entire NEXT box
             ctx.strokeStyle = p_color
-            ctx.shadowColor = p_color
-            ctx.shadowBlur = 8
-            ctx.lineWidth = 1.5
+            ctx.lineWidth = 2.5
+            if not self.is_mobile:
+                ctx.shadowColor = p_color
+                ctx.shadowBlur = int(14 + 10 * pulse)
+
+            ctx.globalAlpha = 0.40 + 0.30 * pulse
+            ctx.strokeRect(nx - 2, ny - 2, nw + 4, nh + 4)
+
+            # 2. Dark cyber background with pulsing color wash
+            ctx.globalAlpha = 0.95
+            ctx.fillStyle = '#080c1a'
+            ctx.fillRect(nx, ny, nw, nh)
+
+            ctx.globalAlpha = 0.18 + 0.14 * pulse
+            ctx.fillStyle = p_color
+            ctx.fillRect(nx, ny, nw, nh)
+
+            # 3. Vivid neon border
+            ctx.globalAlpha = 1.0
+            ctx.strokeStyle = p_color
+            ctx.lineWidth = 2.2
+            ctx.strokeRect(nx, ny, nw, nh)
+
+            # 4. Flashing tactical alert header banner: "⚡ BOMB" / "⚡ LIGHTNING"
+            ctx.fillStyle = p_color
+            ctx.fillRect(nx + 2, ny + 2, nw - 4, 13)
+            ctx.fillStyle = '#000000'
+            ctx.font = 'bold 8.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText(f"⚡ {info.get('name', '').upper()}", nx + nw / 2, ny + 10)
+
         else:
+            ctx.fillStyle = '#0c0e14'
+            ctx.fillRect(nx, ny, nw, nh)
             ctx.strokeStyle = '#252a36'
             ctx.lineWidth = 1.2
-            ctx.shadowBlur = 0
+            ctx.strokeRect(nx, ny, nw, nh)
 
-        ctx.strokeRect(nx, ny, nw, nh)
-        ctx.shadowBlur = 0
+            ctx.fillStyle = '#94a3b8'
+            ctx.font = 'bold 8.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.textAlign = 'center'
+            ctx.fillText("NEXT", nx + nw / 2, ny + 13)
 
-        ctx.fillStyle = '#94a3b8'
-        ctx.font = 'bold 8.5px "Neuropol", "Orbitron", sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText("NEXT", nx + nw / 2, ny + 13)
+        ctx.restore()
 
         if len(game.next_queue) > 0:
             self.draw_mini_piece(ctx, game.next_queue[0], nx + 8, ny + 20, mini_size=11)

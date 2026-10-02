@@ -76,7 +76,7 @@ ABILITY_INFO = {
     ABILITY_HEAVY: {
         'symbol': '🪨',
         'name': 'Heavy',
-        'color': '#708090',
+        'color': '#f59e0b',
         'desc': 'Falls 3x faster, cannot rotate'
     },
 }

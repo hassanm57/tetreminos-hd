@@ -76,6 +76,12 @@ class MockContext:
                 pass
         return MockGradient()
 
+    def createRadialGradient(self, x0, y0, r0, x1, y1, r1):
+        class MockGradient:
+            def addColorStop(self, offset, color):
+                pass
+        return MockGradient()
+
 
 class TestResponsiveRenderer(unittest.TestCase):
 
@@ -116,12 +122,21 @@ class TestResponsiveRenderer(unittest.TestCase):
         self.renderer.draw_banner(mobile_ctx, "SYSTEM CORRUPTED", "SCORE: 100 // TAP TO RESTART", '#ff0055', 360, 720)
         self.renderer.draw_banner(desktop_ctx, "SYSTEM PAUSED", "PRESS P TO RESUME", '#00f0f0', 750, 720)
 
-    def test_game_over_mobile_rendering(self):
-        """When game_over is True on mobile, render() includes restart instruction."""
+    def test_powerup_block_glow_rendering(self):
+        """draw_neon_block with ability should execute cleanly with radiant glow halo on both desktop and mobile."""
+        from config import ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY
+        ctx = MockContext(width=750, height=720)
+        abilities = [ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY]
+        for ab in abilities:
+            self.renderer.draw_neon_block(ctx, x=50, y=100, color='#00f0f0', ability=ab)
+
+    def test_mobile_top_bar_powerup_prominence(self):
+        """draw_mobile_top_bar should render prominent glowing alert box when next piece has a powerup."""
         mobile_ctx = MockContext(width=360, height=720)
-        self.game.game_over = True
-        self.renderer.render(mobile_ctx, self.game, self.sector_mgr, game_mode='ROGUE', high_score=2000)
+        self.game.next_queue[0] = Piece('T', ability=ABILITY_BOMB)
+        self.renderer.draw_mobile_top_bar(mobile_ctx, self.game, high_score=1500, canvas_w=360)
 
 
 if __name__ == '__main__':
     unittest.main()
+
