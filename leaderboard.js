@@ -82,7 +82,7 @@ function validateCallsign(name) {
     const isActuallyCreator = (localStorage.getItem("tetremino_is_creator") === "true");
     if (!isActuallyCreator) {
       const pass = prompt("👑 Enter Creator Passcode to authenticate as hassanm57 (or Cancel):");
-      if (pass && (pass === "hm57" || pass.toLowerCase() === "hassan" || pass.toLowerCase() === "hassanm57" || pass.toLowerCase() === "creator")) {
+      if (pass && (pass === "Palaahassan" || pass.trim() === "Palaahassan" || pass.trim().toLowerCase() === "palaahassan")) {
         localStorage.setItem("tetremino_is_creator", "true");
         return { valid: true, cleanName: CREATOR_CALLSIGN };
       }
@@ -165,7 +165,7 @@ async function fetchLeaderboardData(mode) {
  * Submits a new score to the leaderboard.
  */
 async function submitScoreToLeaderboard(score, mode, lines, stage) {
-  if (score <= 0) return;
+  if (typeof score !== "number" || isNaN(score) || score <= 0) return;
   mode = (mode || "ROGUE").toUpperCase();
   const pilotId = getOrCreatePilotId();
   const name = getPilotCallsign();
@@ -193,7 +193,7 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
   }
 
   // 2. Always update local offline storage immediately
-  let list = cachedLeaderboardData[mode] || loadLocalCache(mode) || [...DEFAULT_LEADERBOARDS[mode]];
+  let list = cachedLeaderboardData[mode] || loadLocalCache(mode) || JSON.parse(JSON.stringify(DEFAULT_LEADERBOARDS[mode]));
   
   // Find if current pilot already has an entry
   let foundIdx = -1;

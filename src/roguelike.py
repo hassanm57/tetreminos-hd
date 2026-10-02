@@ -110,6 +110,11 @@ class SectorManager:
         self.is_drafting = False
         self.run_completed = False
 
+    @property
+    def current_sector(self):
+        """Returns 1-based current sector number."""
+        return self.current_sector_index + 1
+
     def get_current_sector(self):
         """Returns the dictionary data for the current sector."""
         if self.current_sector_index < len(SECTORS):

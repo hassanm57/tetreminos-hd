@@ -762,9 +762,11 @@ class GameApp:
             elif etype == 'game_over':
                 self.audio.play_game_over()
                 if HAS_BROWSER_ENV and hasattr(js, 'window') and hasattr(js.window, 'onTetrisGameOver'):
-                    sector_num = self.sector_mgr.current_sector if self.sector_mgr else 1
                     try:
-                        js.window.onTetrisGameOver(self.game.score, self.game_mode, self.game.lines_cleared, sector_num)
+                        sec_num = 1
+                        if self.sector_mgr:
+                            sec_num = getattr(self.sector_mgr, 'current_sector', self.sector_mgr.current_sector_index + 1)
+                        js.window.onTetrisGameOver(self.game.score, self.game_mode, self.game.lines_cleared, sec_num)
                     except Exception as err:
                         pass
 
@@ -845,9 +847,10 @@ class GameApp:
         self.renderer.update_particles(delta_time)
         self.renderer.render(self.ctx, self.game, self.sector_mgr, self.game_mode, self.high_score)
 
-        # Request next frame
-        loop_proxy = create_proxy(self.game_loop)
-        js.window.requestAnimationFrame(loop_proxy)
+        # Request next frame (reusing proxy to prevent Pyodide proxy table leaks)
+        if not hasattr(self, '_loop_proxy') or self._loop_proxy is None:
+            self._loop_proxy = create_proxy(self.game_loop)
+        js.window.requestAnimationFrame(self._loop_proxy)
 
 
 # Start the application when script is loaded by PyScript / Pyodide
