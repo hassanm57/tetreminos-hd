@@ -631,7 +631,7 @@ class GameApp:
         # Only update game physics if not drafting relics
         if not (self.sector_mgr and self.sector_mgr.is_drafting):
             # Snappy in-engine DAS (Delayed Auto Shift) and ARR (Auto Repeat Rate)
-            if not self.game.game_over and not self.game.is_paused:
+            if not self.game.game_over and not self.game.is_paused and not self.game.is_clearing and self.game.current_piece is not None:
                 if self.left_held or self.right_held:
                     self.hold_timer += delta_time
                     if self.hold_timer >= DAS_DELAY:

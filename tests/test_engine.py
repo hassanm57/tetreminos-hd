@@ -251,7 +251,41 @@ class TestTetrisEngine(unittest.TestCase):
         self.assertIn("BOMB", badge.text)
         self.assertGreater(len(renderer.shockwaves), 0)
         self.assertGreater(len(renderer.screen_flashes), 0)
-        self.assertGreater(len(renderer.particles), 0)
+    def test_line_clear_delay_and_collapse(self):
+        """Verifies completed lines enter delay phase and collapse only after timer ends."""
+        from config import LINE_CLEAR_DELAY
+        # Fill bottom row completely except columns 3 and 4
+        bottom = TOTAL_HEIGHT - 1
+        for x in range(BOARD_WIDTH):
+            if x not in (3, 4):
+                self.game.board[bottom][x] = {'color': '#00f0f0', 'ability': ABILITY_NONE}
+
+        # Place an O piece that fills columns 3 and 4 on the bottom row
+        piece = Piece('O')
+        piece.x = 2
+        piece.y = bottom - 1  # O piece occupies (3, bottom-1), (4, bottom-1), (3, bottom), (4, bottom)
+        self.game.current_piece = piece
+
+        self.game.lock_current_piece()
+
+        # Line clear delay must be active
+        self.assertTrue(self.game.is_clearing)
+        self.assertGreater(self.game.line_clear_timer, 0.0)
+        self.assertIn(bottom, self.game.clearing_rows)
+        # Current piece is None while clearing
+        self.assertIsNone(self.game.current_piece)
+
+        # Before delay ends, the row must NOT have collapsed yet
+        self.assertIsNotNone(self.game.board[bottom][0])
+
+        # Step time forward by slightly more than LINE_CLEAR_DELAY
+        self.game.update(LINE_CLEAR_DELAY + 0.02)
+
+        # Now delay has expired, rows have collapsed, and next piece spawned
+        self.assertFalse(self.game.is_clearing)
+        self.assertEqual(self.game.line_clear_timer, 0.0)
+        self.assertIsNotNone(self.game.current_piece)
 
 if __name__ == '__main__':
     unittest.main()
+

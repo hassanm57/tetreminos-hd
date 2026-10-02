@@ -4,7 +4,7 @@
 import random
 from config import (
     BOARD_WIDTH, BOARD_HEIGHT, HIDDEN_ROWS, TOTAL_HEIGHT,
-    INITIAL_FALL_SPEED, SOFT_DROP_SPEED, LOCK_DELAY, MAX_LOCK_RESETS,
+    INITIAL_FALL_SPEED, SOFT_DROP_SPEED, LOCK_DELAY, MAX_LOCK_RESETS, LINE_CLEAR_DELAY,
     COLORS, ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING,
     ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_BURNING, ABILITY_HEAVY,
     SCORE_SINGLE, SCORE_DOUBLE, SCORE_TRIPLE, SCORE_TETRIS,
@@ -87,10 +87,12 @@ class TetrisGame:
         self.last_move_was_rotation = False
         self.t_spin_type = None
 
-        # Tactical abilities state
+        # Tactical abilities and line-clear animation state
         self.freeze_timer = 0.0
         self.freeze_pieces_remaining = 0
         self.last_cleared_rows = []
+        self.clearing_rows = []
+        self.line_clear_timer = 0.0
 
         # Event log for audio and visual effects (consumed by renderer/audio each tick)
         self.pending_events = []
@@ -108,6 +110,11 @@ class TetrisGame:
                 new_row.append(None)
             board.append(new_row)
         return board
+
+    @property
+    def is_clearing(self):
+        """Returns True if the engine is actively animating a line clear before dropping rows."""
+        return self.line_clear_timer > 0.0
 
     def refill_bag(self):
         """Fills the 7-bag with each tetromino and shuffles them."""
@@ -365,13 +372,18 @@ class TetrisGame:
                 self.pending_events.append({'type': 'ability_heavy_landed', 'x': ax, 'y': ay})
 
         # Check and clear completed lines
-        lines_cleared_now = self.clear_completed_lines()
-
-        # Update scoring, combos, and level progression
-        self.update_score_and_level(lines_cleared_now)
-
-        # Spawn next piece
-        self.spawn_next_piece()
+        full_rows = self.get_full_lines()
+        if full_rows:
+            # Stage lines for clearing with line-clear animation delay:
+            # Keep rows in place while line break animation plays, then drop ceiling rows down.
+            self.clearing_rows = list(full_rows)
+            self.last_cleared_rows = list(full_rows)
+            self.line_clear_timer = LINE_CLEAR_DELAY
+            self.current_piece = None
+            self.update_score_and_level(len(full_rows))
+        else:
+            self.update_score_and_level(0)
+            self.spawn_next_piece()
 
     def check_t_spin(self):
         """
@@ -404,11 +416,8 @@ class TetrisGame:
             self.t_spin_type = 'REGULAR'
             self.pending_events.append({'type': 't_spin', 'spin_type': 'REGULAR'})
 
-    def clear_completed_lines(self):
-        """
-        Finds any full rows, removes them, and drops rows above down.
-        Returns the number of lines cleared.
-        """
+    def get_full_lines(self):
+        """Finds any full rows on the board and returns their row indices."""
         full_row_indices = []
         for y in range(TOTAL_HEIGHT):
             is_full = True
@@ -418,12 +427,21 @@ class TetrisGame:
                     break
             if is_full:
                 full_row_indices.append(y)
+        return full_row_indices
+
+    def clear_completed_lines(self, full_row_indices=None):
+        """
+        Finds any full rows (or uses provided indices), removes them, and drops rows above down.
+        Returns the number of lines cleared.
+        """
+        if full_row_indices is None:
+            full_row_indices = self.get_full_lines()
 
         # Store cleared row indices for visual line-break animations
         self.last_cleared_rows = list(full_row_indices)
 
         # Remove the full rows and insert fresh empty rows at the very top (index 0)
-        for row_idx in full_row_indices:
+        for row_idx in sorted(full_row_indices):
             del self.board[row_idx]
             new_empty_row = [None for _ in range(BOARD_WIDTH)]
             self.board.insert(0, new_empty_row)
@@ -524,6 +542,17 @@ class TetrisGame:
         Handles gravity descent, lock delay countdown, and burning timers.
         """
         if self.game_over or self.is_paused:
+            return
+
+        # Handle line-clear animation delay: wait for line break animation before collapsing rows
+        if self.line_clear_timer > 0.0:
+            self.line_clear_timer -= delta_time
+            if self.line_clear_timer <= 0.0:
+                self.line_clear_timer = 0.0
+                rows_to_collapse = list(self.clearing_rows)
+                self.clearing_rows = []
+                self.clear_completed_lines(rows_to_collapse)
+                self.spawn_next_piece()
             return
 
         # Update freeze timer
