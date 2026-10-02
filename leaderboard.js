@@ -12,25 +12,13 @@ const GOOGLE_SHEET_LEADERBOARD_URL = "";
 
 const CREATOR_CALLSIGN = "hassanm57";
 
-// Default Matrix High Scores (Formidable scores for players to chase!)
+// Default Matrix High Scores: Only #1 Creator & Champion hassanm57
 const DEFAULT_LEADERBOARDS = {
   ROGUE: [
-    { rank: 1, name: "hassanm57", score: 184650, stage: "SECTOR 5 [BOSS]", lines: 86, date: "2026-10-02", isCreator: true },
-    { rank: 2, name: "Valkyrie_9", score: 138400, stage: "SECTOR 4", lines: 68, date: "2026-09-28", isCreator: false },
-    { rank: 3, name: "NeonPhantom", score: 109250, stage: "SECTOR 4", lines: 54, date: "2026-09-25", isCreator: false },
-    { rank: 4, name: "ZeroCool", score: 84700, stage: "SECTOR 3", lines: 42, date: "2026-09-21", isCreator: false },
-    { rank: 5, name: "GlitchHunter", score: 67300, stage: "SECTOR 3", lines: 35, date: "2026-09-18", isCreator: false },
-    { rank: 6, name: "PixelKnight", score: 51900, stage: "SECTOR 2", lines: 28, date: "2026-09-14", isCreator: false },
-    { rank: 7, name: "Cypher_X", score: 39200, stage: "SECTOR 2", lines: 20, date: "2026-09-10", isCreator: false }
+    { rank: 1, name: "hassanm57", score: 9412, stage: "SECTOR 3", lines: 28, date: "2026-10-02", isCreator: true }
   ],
   CLASSIC: [
-    { rank: 1, name: "hassanm57", score: 248900, stage: "LEVEL 16", lines: 158, date: "2026-10-02", isCreator: true },
-    { rank: 2, name: "MatrixRunner", score: 192400, stage: "LEVEL 14", lines: 136, date: "2026-09-29", isCreator: false },
-    { rank: 3, name: "Hyperion_99", score: 164800, stage: "LEVEL 12", lines: 118, date: "2026-09-26", isCreator: false },
-    { rank: 4, name: "GhostDrop", score: 128600, stage: "LEVEL 11", lines: 102, date: "2026-09-22", isCreator: false },
-    { rank: 5, name: "VortexMino", score: 98400, stage: "LEVEL 9", lines: 84, date: "2026-09-19", isCreator: false },
-    { rank: 6, name: "NovaBlade", score: 76200, stage: "LEVEL 7", lines: 68, date: "2026-09-15", isCreator: false },
-    { rank: 7, name: "AstroBoy", score: 52100, stage: "LEVEL 5", lines: 48, date: "2026-09-11", isCreator: false }
+    { rank: 1, name: "hassanm57", score: 9412, stage: "LEVEL 5", lines: 28, date: "2026-10-02", isCreator: true }
   ]
 };
 
@@ -249,15 +237,29 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
   return { success: true, rank: list.findIndex(item => item.name.toLowerCase() === name.toLowerCase()) + 1 };
 }
 
+const LB_CACHE_KEY_VERSION = "v3";
+
+// Clean obsolete legacy leaderboard caches and sync high score to 9412
+try {
+  localStorage.removeItem("tetremino_lb_rogue");
+  localStorage.removeItem("tetremino_lb_classic");
+  localStorage.removeItem("tetremino_lb_v2_rogue");
+  localStorage.removeItem("tetremino_lb_v2_classic");
+  const curHigh = parseInt(localStorage.getItem("tetremino_high_score") || "0", 10);
+  if (curHigh < 9412) {
+    localStorage.setItem("tetremino_high_score", "9412");
+  }
+} catch (e) {}
+
 function saveLocalCache(mode, data) {
   try {
-    localStorage.setItem(`tetremino_lb_${mode.toLowerCase()}`, JSON.stringify(data));
+    localStorage.setItem(`tetremino_lb_${LB_CACHE_KEY_VERSION}_${mode.toLowerCase()}`, JSON.stringify(data));
   } catch (e) {}
 }
 
 function loadLocalCache(mode) {
   try {
-    const raw = localStorage.getItem(`tetremino_lb_${mode.toLowerCase()}`);
+    const raw = localStorage.getItem(`tetremino_lb_${LB_CACHE_KEY_VERSION}_${mode.toLowerCase()}`);
     if (raw) return JSON.parse(raw);
   } catch (e) {}
   return null;

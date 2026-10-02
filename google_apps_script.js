@@ -27,8 +27,8 @@ const SPREADSHEET_CLASSIC = "ClassicLeaderboard";
 const CREATOR_NAME = "hassanm57";
 
 // High scores for the Creator & Champion
-const CREATOR_ROGUE_SCORE = 184650;   // Sector 5 Cleared
-const CREATOR_CLASSIC_SCORE = 248900; // Level 16 Marathon
+const CREATOR_ROGUE_SCORE = 9412;   // High Score Record
+const CREATOR_CLASSIC_SCORE = 9412; // High Score Record
 
 /**
  * Handles GET requests: returns top 50 scores for the requested mode.
@@ -192,23 +192,11 @@ function initSheetsIfNeeded() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
   ensureSheetWithSeed(ss, SPREADSHEET_ROGUE, [
-    ["creator_root", "hassanm57", CREATOR_ROGUE_SCORE, "SECTOR 5 [BOSS]", 86, "2026-10-02"],
-    ["seed_02", "Valkyrie_9", 138400, "SECTOR 4", 68, "2026-09-28"],
-    ["seed_03", "NeonPhantom", 109250, "SECTOR 4", 54, "2026-09-25"],
-    ["seed_04", "ZeroCool", 84700, "SECTOR 3", 42, "2026-09-21"],
-    ["seed_05", "GlitchHunter", 67300, "SECTOR 3", 35, "2026-09-18"],
-    ["seed_06", "PixelKnight", 51900, "SECTOR 2", 28, "2026-09-14"],
-    ["seed_07", "Cypher_X", 39200, "SECTOR 2", 20, "2026-09-10"]
+    ["creator_root", "hassanm57", CREATOR_ROGUE_SCORE, "SECTOR 3", 28, "2026-10-02"]
   ]);
   
   ensureSheetWithSeed(ss, SPREADSHEET_CLASSIC, [
-    ["creator_root", "hassanm57", CREATOR_CLASSIC_SCORE, "LEVEL 16", 158, "2026-10-02"],
-    ["seed_c02", "MatrixRunner", 192400, "LEVEL 14", 136, "2026-09-29"],
-    ["seed_c03", "Hyperion_99", 164800, "LEVEL 12", 118, "2026-09-26"],
-    ["seed_c04", "GhostDrop", 128600, "LEVEL 11", 102, "2026-09-22"],
-    ["seed_c05", "VortexMino", 98400, "LEVEL 9", 84, "2026-09-19"],
-    ["seed_c06", "NovaBlade", 76200, "LEVEL 7", 68, "2026-09-15"],
-    ["seed_c07", "AstroBoy", 52100, "LEVEL 5", 48, "2026-09-11"]
+    ["creator_root", "hassanm57", CREATOR_CLASSIC_SCORE, "LEVEL 5", 28, "2026-10-02"]
   ]);
 }
 
