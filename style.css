@@ -272,111 +272,62 @@ body {
   50% { opacity: 0; }
 }
 
-/* Mode Selection Section */
+/* Mode Selection Toggle */
 .welcome-mode-section {
   width: 100%;
+  margin-top: 36px;
   margin-bottom: 20px;
-}
-
-.welcome-section-label {
-  font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: #94a3b8;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.welcome-modes-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-}
-
-.welcome-mode-card {
-  position: relative;
-  background: #070913;
-  border: 1.5px solid #1e263d;
-  border-radius: 8px;
-  padding: 12px 12px;
-  cursor: pointer;
-  text-align: left;
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  transition: all 0.22s ease;
-  user-select: none;
+  justify-content: center;
 }
 
-.welcome-mode-card:hover {
-  border-color: #3b82f6;
-  background: #0b1122;
+.welcome-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #060912;
+  border: 1.5px solid #1a2236;
+  border-radius: 24px;
+  padding: 3px;
+  gap: 4px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
 }
 
-.welcome-mode-card.active {
-  border-color: #00f0f0;
-  background: rgba(0, 240, 240, 0.08);
-  box-shadow: 0 0 16px rgba(0, 240, 240, 0.22), inset 0 0 12px rgba(0, 240, 240, 0.08);
-}
-
-.welcome-mode-indicator {
-  position: absolute;
-  top: 7px;
-  right: 8px;
-  font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 7.5px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: #172033;
+.welcome-mode-btn {
+  background: transparent;
+  border: 1px solid transparent;
   color: #64748b;
-  transition: all 0.2s ease;
-}
-
-.welcome-mode-card.active .welcome-mode-indicator {
-  background: #00f0f0;
-  color: #000000;
-  box-shadow: 0 0 8px rgba(0, 240, 240, 0.6);
-}
-
-.welcome-mode-icon {
-  font-size: 20px;
-  line-height: 1;
-  margin-top: 2px;
-}
-
-.welcome-mode-info {
-  flex: 1;
-}
-
-.welcome-mode-title {
   font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #ffffff;
-  margin-bottom: 2px;
-}
-
-.welcome-mode-badge {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #ff0055;
-  margin-bottom: 4px;
-}
-
-#welcome-mode-classic .welcome-mode-badge {
-  color: #38bdf8;
-}
-
-.welcome-mode-desc {
   font-size: 10px;
-  line-height: 1.35;
-  color: #94a3b8;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.welcome-mode-btn:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.welcome-mode-btn.active {
+  background: rgba(0, 240, 240, 0.12);
+  border-color: #00f0f0;
+  color: #00f0f0;
+  box-shadow: 0 0 12px rgba(0, 240, 240, 0.35);
+}
+
+#welcome-mode-classic.welcome-mode-btn.active {
+  background: rgba(255, 215, 0, 0.12);
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
 }
 
 /* Play Button with Surrounding Cyberpunk Animations */
@@ -385,15 +336,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 20px;
+  padding: 10px 16px;
   margin-bottom: 14px;
 }
 
 .play-glow-ring {
   position: absolute;
-  width: calc(100% - 10px);
-  height: calc(100% - 10px);
-  border-radius: 8px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 6px;
   border: 1.5px solid rgba(0, 240, 240, 0.45);
   pointer-events: none;
   animation: pulseGlowRing 2.4s infinite ease-out;
@@ -406,36 +357,36 @@ body {
 
 @keyframes pulseGlowRing {
   0% { transform: scale(0.92); opacity: 0.9; }
-  100% { transform: scale(1.24); opacity: 0; }
+  100% { transform: scale(1.20); opacity: 0; }
 }
 
 /* Corner Cyber Brackets */
 .cyber-bracket {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-color: #00f0f0;
   border-style: solid;
   pointer-events: none;
   transition: all 0.3s ease;
 }
 
-.bracket-tl { top: 4px; left: 4px; border-width: 2px 0 0 2px; }
-.bracket-tr { top: 4px; right: 4px; border-width: 2px 2px 0 0; }
-.bracket-bl { bottom: 4px; left: 4px; border-width: 0 0 2px 2px; }
-.bracket-br { bottom: 4px; right: 4px; border-width: 0 2px 2px 0; }
+.bracket-tl { top: 2px; left: 2px; border-width: 1.5px 0 0 1.5px; }
+.bracket-tr { top: 2px; right: 2px; border-width: 1.5px 1.5px 0 0; }
+.bracket-bl { bottom: 2px; left: 2px; border-width: 0 0 1.5px 1.5px; }
+.bracket-br { bottom: 2px; right: 2px; border-width: 0 1.5px 1.5px 0; }
 
 .welcome-play-btn {
   position: relative;
   background: #090d1a;
-  border: 2px solid #24304d;
+  border: 1.5px solid #24304d;
   color: #64748b;
   font-family: 'Neuropol', 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-size: 11.5px;
   font-weight: 900;
-  letter-spacing: 2.5px;
-  padding: 13px 40px;
-  border-radius: 6px;
+  letter-spacing: 2px;
+  padding: 9px 26px;
+  border-radius: 5px;
   cursor: not-allowed;
   overflow: hidden;
   transition: all 0.25s ease;
@@ -447,13 +398,13 @@ body {
   border-color: #00f0f0;
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(0, 240, 240, 0.4), inset 0 0 16px rgba(0, 240, 240, 0.15);
+  box-shadow: 0 0 20px rgba(0, 240, 240, 0.4), inset 0 0 14px rgba(0, 240, 240, 0.15);
 }
 
 .welcome-play-btn.ready:hover {
   transform: translateY(-2px) scale(1.02);
   border-color: #ffffff;
-  box-shadow: 0 0 35px rgba(0, 240, 240, 0.7);
+  box-shadow: 0 0 30px rgba(0, 240, 240, 0.7);
 }
 
 .welcome-play-btn.ready:active {
@@ -1396,40 +1347,24 @@ body {
   }
 
   .welcome-mode-section {
+    margin-top: 26px !important;
     margin-bottom: 14px !important;
   }
 
-  .welcome-modes-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-  }
-
-  .welcome-mode-card {
-    padding: 8px 10px !important;
-  }
-
-  .welcome-mode-title {
-    font-size: 11px !important;
-  }
-
-  .welcome-mode-badge {
-    font-size: 8px !important;
-    margin-bottom: 2px !important;
-  }
-
-  .welcome-mode-desc {
-    display: none !important;
+  .welcome-mode-btn {
+    padding: 6px 14px !important;
+    font-size: 9.5px !important;
   }
 
   .welcome-play-container {
-    padding: 10px 14px !important;
+    padding: 8px 12px !important;
     margin-bottom: 10px !important;
   }
 
   .welcome-play-btn {
-    padding: 11px 32px !important;
-    font-size: 13px !important;
-    letter-spacing: 2px !important;
+    padding: 8px 22px !important;
+    font-size: 11px !important;
+    letter-spacing: 1.5px !important;
   }
 
   /* Pause Modal Mobile */

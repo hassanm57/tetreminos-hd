@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=14.0">
+  <link rel="stylesheet" href="style.css?v=15.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -112,28 +112,15 @@
           </div>
 
           <!-- Mode Selector (Rogue default selected) -->
+          <!-- Ultra-Clean Mode Selector Toggle -->
           <div id="welcomeModeSection" class="welcome-mode-section">
-            <div class="welcome-section-label">⚡ SELECT MISSION PROTOCOL</div>
-            <div class="welcome-modes-grid">
-              <div id="welcome-mode-rogue" class="welcome-mode-card active" data-mode="ROGUE">
-                <div class="welcome-mode-indicator">✓ SELECTED</div>
-                <div class="welcome-mode-icon">⚔️</div>
-                <div class="welcome-mode-info">
-                  <div class="welcome-mode-title">ROGUE PROTOCOL</div>
-                  <div class="welcome-mode-badge">5 SECTORS // RELICS // POWER-UPS</div>
-                  <div class="welcome-mode-desc">Special minos (Bomb, Lightning, Magnet, Cryo, Thermite, Heavy), glitch hazards, and 3-card augment drafts!</div>
-                </div>
-              </div>
-
-              <div id="welcome-mode-classic" class="welcome-mode-card" data-mode="CLASSIC">
-                <div class="welcome-mode-indicator">SELECT</div>
-                <div class="welcome-mode-icon">♾️</div>
-                <div class="welcome-mode-info">
-                  <div class="welcome-mode-title">CLASSIC MARATHON</div>
-                  <div class="welcome-mode-badge">PURE GUIDELINE // HIGH SCORE</div>
-                  <div class="welcome-mode-desc">Standard Guideline Tetris. Accelerating gravity, standard SRS wall kicks, zero power-ups, pure flow.</div>
-                </div>
-              </div>
+            <div class="welcome-mode-toggle">
+              <button id="welcome-mode-rogue" class="welcome-mode-btn active" data-mode="ROGUE" type="button">
+                <span>⚔️ ROGUE</span>
+              </button>
+              <button id="welcome-mode-classic" class="welcome-mode-btn" data-mode="CLASSIC" type="button">
+                <span>♾️ CLASSIC</span>
+              </button>
             </div>
           </div>
 
@@ -424,21 +411,15 @@
       fastForwardTyping();
       selectedWelcomeMode = mode;
       window.selectedWelcomeMode = mode;
-      const rogueCard = document.getElementById("welcome-mode-rogue");
-      const classicCard = document.getElementById("welcome-mode-classic");
-      if (rogueCard && classicCard) {
-        const rogueInd = rogueCard.querySelector(".welcome-mode-indicator");
-        const classicInd = classicCard.querySelector(".welcome-mode-indicator");
+      const rogueBtn = document.getElementById("welcome-mode-rogue");
+      const classicBtn = document.getElementById("welcome-mode-classic");
+      if (rogueBtn && classicBtn) {
         if (mode === 'ROGUE') {
-          rogueCard.classList.add("active");
-          classicCard.classList.remove("active");
-          if (rogueInd) rogueInd.innerText = "✓ SELECTED";
-          if (classicInd) classicInd.innerText = "SELECT";
+          rogueBtn.classList.add("active");
+          classicBtn.classList.remove("active");
         } else {
-          classicCard.classList.add("active");
-          rogueCard.classList.remove("active");
-          if (classicInd) classicInd.innerText = "✓ SELECTED";
-          if (rogueInd) rogueInd.innerText = "SELECT";
+          classicBtn.classList.add("active");
+          rogueBtn.classList.remove("active");
         }
       }
     }
@@ -534,7 +515,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=14.0`);
+          const response = await fetch(`./src/${fileName}?v=15.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
