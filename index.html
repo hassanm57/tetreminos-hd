@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=8.0">
+  <link rel="stylesheet" href="style.css?v=9.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -311,7 +311,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=8.0`);
+          const response = await fetch(`./src/${fileName}?v=9.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -353,12 +353,16 @@ import main
       const container = document.querySelector(".canvas-container");
       if (!canvas) return;
 
+      // Choose single listener target to prevent event duplication / bubbling
+      const touchSurface = container || canvas;
+
       let startX = 0, startY = 0;
       let lastX = 0, lastY = 0;
       let startTime = 0;
       let accumX = 0, accumY = 0;
       let hasMoved = false;
       let hardDropped = false;
+      let lastRotateTime = 0;
 
       function getTouch(e) {
         if (e.touches && e.touches.length > 0) return e.touches[0];
@@ -366,9 +370,15 @@ import main
         return e;
       }
 
+      function isInteractiveUI(e) {
+        return !!(e.target && e.target.closest && e.target.closest('button, .relic-modal, .mode-modal, .controls-modal, .drawer-tab'));
+      }
+
       function handleTouchStart(e) {
+        if (isInteractiveUI(e)) return;
         if (e.touches && e.touches.length > 1) return;
         e.preventDefault();
+        e.stopPropagation();
 
         if (window.tetrisApp && window.tetrisApp.audio) {
           window.tetrisApp.audio.init_context();
@@ -387,7 +397,9 @@ import main
       }
 
       function handleTouchMove(e) {
+        if (isInteractiveUI(e)) return;
         e.preventDefault();
+        e.stopPropagation();
         if (hardDropped) return;
 
         const t = getTouch(e);
@@ -447,7 +459,9 @@ import main
       }
 
       function handleTouchEnd(e) {
+        if (isInteractiveUI(e)) return;
         e.preventDefault();
+        e.stopPropagation();
         if (hardDropped) return;
 
         const t = getTouch(e);
@@ -473,14 +487,20 @@ import main
           return;
         }
 
-        // 3. Clean Tap -> Rotate
-        // Left half of screen -> Counter-Clockwise (anti-clockwise)
-        // Right half of screen -> Clockwise
+        // 3. Clean Tap -> Rotate Exactly 90 Degrees
+        // Left half of screen -> Counter-Clockwise (CCW / anti-clockwise)
+        // Right half of screen -> Clockwise (CW)
         if (!hasMoved && Math.abs(totalDx) < 22 && Math.abs(totalDy) < 22 && elapsed < 350) {
+          const now = Date.now();
+          if (now - lastRotateTime < 200) {
+            return; // Debounce lock: prevent rapid multi-rotation from hardware bounce
+          }
+          lastRotateTime = now;
+
           const rect = canvas.getBoundingClientRect();
           const canvasX = (endX - rect.left) * (canvas.width / rect.width);
           const canvasY = (endY - rect.top) * (canvas.height / rect.height);
-          const midX = canvas.width / 2.0;
+          const screenMidX = rect.left + (rect.width / 2.0);
 
           if (window.tetrisApp) {
             // Tap on top-left HOLD box
@@ -491,7 +511,7 @@ import main
               }
             }
             // Left half of screen -> Rotate Counter-Clockwise (anti-clockwise)
-            if (canvasX < midX) {
+            if (endX < screenMidX) {
               if (window.tetrisApp.handle_touch_rotate_ccw) {
                 window.tetrisApp.handle_touch_rotate_ccw();
                 return;
@@ -507,18 +527,12 @@ import main
         }
       }
 
+      // Attach exclusively to ONE element (touchSurface) so events are never duplicated
       const listenerOpts = { passive: false };
-      canvas.addEventListener("touchstart", handleTouchStart, listenerOpts);
-      canvas.addEventListener("touchmove", handleTouchMove, listenerOpts);
-      canvas.addEventListener("touchend", handleTouchEnd, listenerOpts);
-      canvas.addEventListener("touchcancel", handleTouchEnd, listenerOpts);
-
-      if (container && container !== canvas) {
-        container.addEventListener("touchstart", handleTouchStart, listenerOpts);
-        container.addEventListener("touchmove", handleTouchMove, listenerOpts);
-        container.addEventListener("touchend", handleTouchEnd, listenerOpts);
-        container.addEventListener("touchcancel", handleTouchEnd, listenerOpts);
-      }
+      touchSurface.addEventListener("touchstart", handleTouchStart, listenerOpts);
+      touchSurface.addEventListener("touchmove", handleTouchMove, listenerOpts);
+      touchSurface.addEventListener("touchend", handleTouchEnd, listenerOpts);
+      touchSurface.addEventListener("touchcancel", handleTouchEnd, listenerOpts);
     })();
 
     // Mobile Arsenal Drawer Toggle Coordinator

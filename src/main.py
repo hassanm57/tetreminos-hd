@@ -48,6 +48,7 @@ class GameApp:
         self.new_high_notified = False
 
         self.last_frame_time = time.time()
+        self.last_touch_rotate_time = 0.0
         self.canvas = None
         self.ctx = None
 
@@ -290,7 +291,7 @@ class GameApp:
             self.vibrate(25)
 
     def handle_touch_rotate_cw(self):
-        """Called by touch controller when board is tapped."""
+        """Called by touch controller when right half of board/screen is tapped."""
         self.audio.init_context()
         if self.game.game_over:
             self.restart_game()
@@ -300,11 +301,16 @@ class GameApp:
             self.game.is_paused = False
             self.vibrate(15)
             return
+        # Debounce safeguard: prevent rapid duplicate rotations (< 180ms)
+        now = time.time()
+        if now - self.last_touch_rotate_time < 0.18:
+            return
+        self.last_touch_rotate_time = now
         self.game.rotate(clockwise=True)
         self.vibrate(12)
 
     def handle_touch_rotate_ccw(self):
-        """Called by touch controller when left half of matrix is tapped -> Counter-Clockwise (CCW)."""
+        """Called by touch controller when left half of board/screen is tapped -> Counter-Clockwise (CCW)."""
         self.audio.init_context()
         if self.game.game_over:
             self.restart_game()
@@ -314,6 +320,11 @@ class GameApp:
             self.game.is_paused = False
             self.vibrate(15)
             return
+        # Debounce safeguard: prevent rapid duplicate rotations (< 180ms)
+        now = time.time()
+        if now - self.last_touch_rotate_time < 0.18:
+            return
+        self.last_touch_rotate_time = now
         self.game.rotate(clockwise=False)
         self.vibrate(12)
 
