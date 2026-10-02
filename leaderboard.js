@@ -89,11 +89,15 @@ function validateCallsign(name) {
     return { valid: false, message: "Only letters, numbers, hyphens, and underscores allowed." };
   }
 
-  // 1. Strict creator protection: No one can claim hassanm57
+  // 1. Strict creator protection: No one can claim hassanm57 without passcode
   if (clean.toLowerCase() === CREATOR_CALLSIGN.toLowerCase()) {
-    const myId = getOrCreatePilotId();
     const isActuallyCreator = (localStorage.getItem("tetremino_is_creator") === "true");
     if (!isActuallyCreator) {
+      const pass = prompt("👑 Enter Creator Passcode to authenticate as hassanm57 (or Cancel):");
+      if (pass && (pass === "hm57" || pass.toLowerCase() === "hassan" || pass.toLowerCase() === "hassanm57" || pass.toLowerCase() === "creator")) {
+        localStorage.setItem("tetremino_is_creator", "true");
+        return { valid: true, cleanName: CREATOR_CALLSIGN };
+      }
       return {
         valid: false,
         message: "👑 'hassanm57' is the reserved Creator & Matrix Champion identifier. Please choose your own callsign!"
@@ -407,6 +411,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const callsignFeedback = document.getElementById("callsignFeedback");
 
   if (callsignInput) {
+    // Isolate input element from game engine keyboard listeners
+    const stopPropagation = (e) => {
+      e.stopPropagation();
+    };
+
+    callsignInput.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const res = setPilotCallsign(e.target.value);
+        if (callsignFeedback) {
+          if (!res.valid) {
+            callsignFeedback.innerText = res.message;
+            callsignFeedback.className = "callsign-feedback error";
+          } else {
+            callsignFeedback.innerText = `✓ Callsign set to: ${res.callsign}`;
+            callsignFeedback.className = "callsign-feedback success";
+          }
+        }
+        callsignInput.blur();
+      }
+    });
+
+    callsignInput.addEventListener("keyup", stopPropagation);
+    callsignInput.addEventListener("keypress", stopPropagation);
+
     callsignInput.addEventListener("input", (e) => {
       const val = e.target.value.trim();
       if (!val) {

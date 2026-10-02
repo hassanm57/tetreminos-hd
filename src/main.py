@@ -145,6 +145,30 @@ class GameApp:
 
     def on_keydown(self, event):
         """Handles player keyboard controls."""
+        # 1. Never intercept keyboard inputs when typing into input fields or textareas
+        if HAS_BROWSER_ENV:
+            try:
+                target = getattr(event, 'target', None)
+                tag_name = (getattr(target, 'tagName', '') or '').upper()
+                if tag_name in ['INPUT', 'TEXTAREA', 'SELECT']:
+                    return
+                if getattr(target, 'isContentEditable', False):
+                    return
+                active_el = getattr(js.document, 'activeElement', None)
+                active_tag = (getattr(active_el, 'tagName', '') or '').upper()
+                if active_tag in ['INPUT', 'TEXTAREA', 'SELECT']:
+                    return
+            except Exception:
+                pass
+
+            # 2. Never process game controls while the welcome screen is open
+            try:
+                welcome_el = js.document.getElementById("welcomeScreen")
+                if welcome_el and welcome_el.style.display != "none":
+                    return
+            except Exception:
+                pass
+
         # Initialize Web Audio on first user interaction
         self.audio.init_context()
 
@@ -164,6 +188,40 @@ class GameApp:
         if self.game.game_over:
             if key.lower() == 'r':
                 self.restart_game()
+            return
+
+        # Modal / Pause toggles (allowed even when paused)
+        if key in ['?', '/']:
+            event.preventDefault()
+            controls_modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
+            if controls_modal and controls_modal.style.display == "flex":
+                self.close_controls_modal()
+            else:
+                self.open_controls_modal()
+            return
+        elif key in ["p", "P", "Escape"]:
+            event.preventDefault()
+            controls_modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
+            mode_modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
+            pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
+            lb_modal = js.document.getElementById("leaderboardModal") if HAS_BROWSER_ENV else None
+            if lb_modal and lb_modal.style.display == "flex":
+                try:
+                    js.window.closeLeaderboardModal()
+                except Exception:
+                    lb_modal.style.display = "none"
+            elif controls_modal and controls_modal.style.display == "flex":
+                self.close_controls_modal()
+            elif mode_modal and mode_modal.style.display == "flex":
+                self.close_mode_modal()
+            elif pause_modal and pause_modal.style.display == "flex":
+                self.close_pause_modal()
+            else:
+                self.toggle_pause()
+            return
+
+        # If game is paused, do not process gameplay piece movement
+        if self.game.is_paused:
             return
 
         # Movement with snappy in-engine DAS hold
@@ -204,29 +262,21 @@ class GameApp:
         elif key in ["c", "C", "Shift"]:
             event.preventDefault()
             self.game.hold()
-        elif key in ['?', '/']:
-            event.preventDefault()
-            controls_modal = js.document.getElementById("controlsModal")
-            if controls_modal and controls_modal.style.display == "flex":
-                self.close_controls_modal()
-            else:
-                self.open_controls_modal()
-        elif key in ["p", "P", "Escape"]:
-            event.preventDefault()
-            controls_modal = js.document.getElementById("controlsModal") if HAS_BROWSER_ENV else None
-            mode_modal = js.document.getElementById("modeModal") if HAS_BROWSER_ENV else None
-            pause_modal = js.document.getElementById("pauseModal") if HAS_BROWSER_ENV else None
-            if controls_modal and controls_modal.style.display == "flex":
-                self.close_controls_modal()
-            elif mode_modal and mode_modal.style.display == "flex":
-                self.close_mode_modal()
-            elif pause_modal and pause_modal.style.display == "flex":
-                self.close_pause_modal()
-            else:
-                self.toggle_pause()
 
     def on_keyup(self, event):
         """Releases held keys to stop auto-repeat immediately."""
+        if HAS_BROWSER_ENV:
+            try:
+                target = getattr(event, 'target', None)
+                tag_name = (getattr(target, 'tagName', '') or '').upper()
+                if tag_name in ['INPUT', 'TEXTAREA', 'SELECT']:
+                    return
+                active_el = getattr(js.document, 'activeElement', None)
+                active_tag = (getattr(active_el, 'tagName', '') or '').upper()
+                if active_tag in ['INPUT', 'TEXTAREA', 'SELECT']:
+                    return
+            except Exception:
+                pass
         key = event.key
         if key in ["ArrowLeft", "a", "A"]:
             self.left_held = False

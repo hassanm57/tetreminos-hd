@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=19.0">
+  <link rel="stylesheet" href="style.css?v=20.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -30,6 +30,21 @@
       }
     }
   </style>
+  <script>
+    // Bulletproof Capture Guard: Stop WASD and all keystrokes inside form fields from reaching game engine
+    window.addEventListener('keydown', function(e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        e.stopPropagation();
+      }
+    }, true);
+    window.addEventListener('keyup', function(e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+        e.stopPropagation();
+      }
+    }, true);
+  </script>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
   <script>
     // Strictly detect actual handheld mobile/tablet devices or portrait screens
@@ -604,7 +619,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=19.0`);
+          const response = await fetch(`./src/${fileName}?v=20.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -908,6 +923,6 @@ import main
       bootEngine();
     });
   </script>
-  <script src="leaderboard.js?v=19.0"></script>
+  <script src="leaderboard.js?v=20.0"></script>
 </body>
 </html>
