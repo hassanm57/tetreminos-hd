@@ -22,7 +22,7 @@ class Piece:
     Represents an active falling tetromino piece.
     Contains its shape, rotation state, board coordinates, and any special ability.
     """
-    def __init__(self, shape_type, ability=ABILITY_NONE):
+    def __init__(self, shape_type, ability=ABILITY_NONE, ability_block_index=None):
         self.shape = shape_type
         self.rotation = 0  # 0: spawn, 1: 90 deg, 2: 180 deg, 3: 270 deg
         self.color = COLORS.get(shape_type, '#ffffff')
@@ -30,7 +30,7 @@ class Piece:
         
         # If this piece has a special ability, pick which of its 4 blocks has it
         if self.ability != ABILITY_NONE:
-            self.ability_block_index = random.randint(0, 3)
+            self.ability_block_index = ability_block_index if ability_block_index is not None else random.randint(0, 3)
         else:
             self.ability_block_index = None
 
@@ -370,6 +370,12 @@ class TetrisGame:
                 self.pending_events.append({'type': 'ability_burning_placed', 'x': ax, 'y': ay})
             elif ability == ABILITY_HEAVY:
                 self.pending_events.append({'type': 'ability_heavy_landed', 'x': ax, 'y': ay})
+
+        # Remove icons from stone and freeze blocks once they touch down onto the board
+        if ability in (ABILITY_FREEZE, ABILITY_HEAVY):
+            for bx, by in blocks:
+                if 0 <= by < TOTAL_HEIGHT and 0 <= bx < BOARD_WIDTH and self.board[by][bx] is not None:
+                    self.board[by][bx]['ability'] = ABILITY_NONE
 
         # Check and clear completed lines
         full_rows = self.get_full_lines()

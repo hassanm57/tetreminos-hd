@@ -17,7 +17,7 @@ INITIAL_FALL_SPEED = 1.0    # Seconds per fall step at level 1
 SOFT_DROP_SPEED = 0.05      # Seconds per step when holding down arrow
 DAS_DELAY = 0.10            # Snappy Delayed Auto Shift initial wait time (100ms)
 ARR_RATE = 0.03             # Auto Repeat Rate between repeated shifts (30ms)
-LINE_CLEAR_DELAY = 0.20     # Line clear explosion animation duration before ceiling rows collapse
+LINE_CLEAR_DELAY = 0.26     # Line clear explosion animation duration before ceiling rows collapse
 
 # Color palette - Cyberpunk neon theme
 COLORS = {

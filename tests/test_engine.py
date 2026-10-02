@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from engine import TetrisGame, Piece
 from config import (
     BOARD_WIDTH, TOTAL_HEIGHT,
-    ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE
+    ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE, ABILITY_HEAVY, ABILITY_BURNING
 )
 from srs_tables import TETROMINO_SHAPES, get_kicks
 from abilities import execute_bomb, execute_lightning, execute_magnet
@@ -285,6 +285,36 @@ class TestTetrisEngine(unittest.TestCase):
         self.assertFalse(self.game.is_clearing)
         self.assertEqual(self.game.line_clear_timer, 0.0)
         self.assertIsNotNone(self.game.current_piece)
+
+    def test_stone_and_freeze_icons_removed_on_touchdown(self):
+        """Stone and freeze blocks must have their icons removed (ability set to NONE) once locked on board."""
+        # Test Freeze piece
+        freeze_piece = Piece('O', ability=ABILITY_FREEZE, ability_block_index=0)
+        freeze_piece.x = 0
+        freeze_piece.y = 22  # at bottom
+        self.game.current_piece = freeze_piece
+        freeze_blocks = list(freeze_piece.get_block_positions())
+
+        self.game.lock_current_piece()
+
+        for bx, by in freeze_blocks:
+            cell = self.game.board[by][bx]
+            self.assertIsNotNone(cell)
+            self.assertEqual(cell['ability'], ABILITY_NONE, "Freeze block should have ability set to NONE on touchdown")
+
+        # Test Heavy (Stone) piece
+        heavy_piece = Piece('O', ability=ABILITY_HEAVY, ability_block_index=1)
+        heavy_piece.x = 4
+        heavy_piece.y = 22  # at bottom
+        self.game.current_piece = heavy_piece
+        heavy_blocks = list(heavy_piece.get_block_positions())
+
+        self.game.lock_current_piece()
+
+        for bx, by in heavy_blocks:
+            cell = self.game.board[by][bx]
+            self.assertIsNotNone(cell)
+            self.assertEqual(cell['ability'], ABILITY_NONE, "Stone/Heavy block should have ability set to NONE on touchdown")
 
 if __name__ == '__main__':
     unittest.main()
