@@ -4,7 +4,7 @@
 import time
 import math
 from config import (
-    ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE,
+    ABILITY_NONE, ABILITY_BOMB, ABILITY_LIGHTNING, ABILITY_MAGNET, ABILITY_FREEZE,
     ABILITY_BURNING, ABILITY_HEAVY,
     DAS_DELAY, ARR_RATE, SOFT_DROP_SPEED
 )
@@ -571,7 +571,10 @@ class GameApp:
                 self.renderer.trigger_heavy_landed_effect(hx, hy)
 
             elif etype == 'power_spawn':
+                ability = ev.get('ability', ABILITY_NONE)
                 self.audio.play_power_alert()
+                if ability != ABILITY_NONE:
+                    self.renderer.trigger_powerup_incoming_alert(ability)
 
             elif etype == 'game_over':
                 self.audio.play_game_over()

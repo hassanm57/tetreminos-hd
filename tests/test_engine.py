@@ -238,5 +238,20 @@ class TestTetrisEngine(unittest.TestCase):
         app.process_events()
         self.assertEqual(app.high_score, test_score)
 
+    def test_powerup_incoming_alert(self):
+        """Verifies trigger_powerup_incoming_alert generates big floating badge, shockwave, and flash."""
+        from renderer import CanvasRenderer
+        from config import ABILITY_BOMB
+        renderer = CanvasRenderer()
+        renderer.trigger_powerup_incoming_alert(ABILITY_BOMB)
+
+        self.assertGreater(len(renderer.floating_badges), 0)
+        badge = renderer.floating_badges[0]
+        self.assertTrue(badge.is_large)
+        self.assertIn("BOMB", badge.text)
+        self.assertGreater(len(renderer.shockwaves), 0)
+        self.assertGreater(len(renderer.screen_flashes), 0)
+        self.assertGreater(len(renderer.particles), 0)
+
 if __name__ == '__main__':
     unittest.main()

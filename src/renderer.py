@@ -489,10 +489,10 @@ class LineBreakExplosionEffect:
 
 class FloatingBadge:
     """
-    Sleek glowing cyberpunk badge announcing ability activation and impacts.
+    Sleek glowing cyberpunk badge announcing ability activation, impacts, or incoming powerups.
     Floats upward with bouncy pop-in and glowing capsule border.
     """
-    def __init__(self, text, subtitle='', icon='⚡', x=150, y=300, color='#00f0f0', duration=1.25):
+    def __init__(self, text, subtitle='', icon='⚡', x=150, y=300, color='#00f0f0', duration=1.25, is_large=False):
         self.text = text
         self.subtitle = subtitle
         self.icon = icon
@@ -500,6 +500,7 @@ class FloatingBadge:
         self.y = y
         self.color = color
         self.duration = duration
+        self.is_large = is_large
         self.elapsed = 0.0
 
     def update(self, dt):
@@ -508,7 +509,7 @@ class FloatingBadge:
     def is_alive(self):
         return self.elapsed < self.duration
 
-    def draw(self, ctx, offset_x, offset_y):
+    def draw(self, ctx, offset_x, offset_y, is_mobile=False):
         if not self.is_alive():
             return
         
@@ -521,7 +522,17 @@ class FloatingBadge:
         else:
             scale = 1.0
 
-        y_float = -progress * 42.0
+        if self.is_large:
+            # Gentle pulsing breathing effect while active
+            pulse = math.sin(self.elapsed * 8.0) * 0.05
+            scale *= (1.0 + pulse)
+            y_float = -progress * 26.0
+            pill_w = 240.0 if is_mobile else 260.0
+            pill_h = 58.0
+        else:
+            y_float = -progress * 42.0
+            pill_w = 175.0
+            pill_h = 34.0 if self.subtitle else 26.0
 
         if progress < 0.65:
             alpha = 1.0
@@ -531,20 +542,18 @@ class FloatingBadge:
         bx = offset_x + self.x
         by = offset_y + self.y + y_float
 
-        pill_w = 175.0
-        pill_h = 34.0 if self.subtitle else 26.0
-
         ctx.save()
         ctx.translate(bx, by)
         ctx.scale(scale, scale)
         ctx.globalAlpha = alpha
 
         # Dark glowing capsule background
-        ctx.fillStyle = 'rgba(4, 7, 18, 0.94)'
-        ctx.shadowColor = self.color
-        ctx.shadowBlur = int(14 * alpha)
+        ctx.fillStyle = 'rgba(4, 7, 20, 0.95)'
+        if not is_mobile:
+            ctx.shadowColor = self.color
+            ctx.shadowBlur = int((20 if self.is_large else 14) * alpha)
         ctx.strokeStyle = self.color
-        ctx.lineWidth = 1.8
+        ctx.lineWidth = 2.6 if self.is_large else 1.8
 
         hw = pill_w / 2.0
         hh = pill_h / 2.0
@@ -560,21 +569,41 @@ class FloatingBadge:
         ctx.stroke()
 
         # Text typography
-        ctx.shadowBlur = 6
-        ctx.shadowColor = self.color
-        ctx.fillStyle = '#ffffff'
+        if not is_mobile:
+            ctx.shadowBlur = 8 if self.is_large else 6
+            ctx.shadowColor = self.color
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
 
-        if self.subtitle:
-            ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillText(f"{self.icon} {self.text}", 0, -5)
-            ctx.font = 'bold 9px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillStyle = self.color
-            ctx.fillText(self.subtitle, 0, 8)
+        if self.is_large:
+            # Big prominent announcement in middle of screen
+            # Icon on left
+            icon_x = -hw + 30.0
+            ctx.font = 'bold 28px sans-serif'
+            ctx.fillStyle = '#ffffff'
+            ctx.fillText(self.icon, icon_x, 1)
+
+            # Text content in remaining space
+            content_x = 16.0
+            ctx.font = 'bold 12.5px "Neuropol", "Orbitron", sans-serif'
+            ctx.fillStyle = '#ffffff'
+            ctx.fillText(self.text, content_x, -8)
+
+            if self.subtitle:
+                ctx.font = 'bold 9.5px "Neuropol", "Orbitron", sans-serif'
+                ctx.fillStyle = self.color
+                ctx.fillText(self.subtitle, content_x, 12)
         else:
-            ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
-            ctx.fillText(f"{self.icon} {self.text}", 0, 1)
+            ctx.fillStyle = '#ffffff'
+            if self.subtitle:
+                ctx.font = 'bold 11px "Neuropol", "Orbitron", sans-serif'
+                ctx.fillText(f"{self.icon} {self.text}", 0, -5)
+                ctx.font = 'bold 9px "Neuropol", "Orbitron", sans-serif'
+                ctx.fillStyle = self.color
+                ctx.fillText(self.subtitle, 0, 8)
+            else:
+                ctx.font = 'bold 12px "Neuropol", "Orbitron", sans-serif'
+                ctx.fillText(f"{self.icon} {self.text}", 0, 1)
 
         ctx.restore()
 
@@ -938,6 +967,68 @@ class CanvasRenderer:
 
         self.floating_badges.append(FloatingBadge("SEISMIC SLAM!", "DENSE OBSIDIAN", icon='🪨', x=cx, y=cy - 12, color='#f59e0b'))
 
+    def trigger_powerup_incoming_alert(self, ability):
+        """
+        Displays a big, flashy, unmissable announcement in the middle of the screen
+        whenever a tactical power piece is incoming.
+        """
+        info = ABILITY_INFO.get(ability, {})
+        if not info:
+            return
+
+        icon = info.get('symbol', '⚡')
+        name = info.get('name', 'POWER').upper()
+        color = info.get('color', '#00f0ff')
+        desc = info.get('desc', 'SPECIAL TACTICAL MINO').upper()
+
+        mid_x = (BOARD_WIDTH * BLOCK_SIZE) / 2.0  # 150 (horizontal center of board)
+        mid_y = 280  # Vertical center of visible board
+
+        # 1. Big glowing cyberpunk alert banner in center of screen
+        self.floating_badges.append(FloatingBadge(
+            text=f"{name} MINO INCOMING!",
+            subtitle=f"{desc}",
+            icon=icon,
+            x=mid_x,
+            y=mid_y,
+            color=color,
+            duration=1.85,
+            is_large=True
+        ))
+
+        # 2. Expanding radial energy shockwave ring from center
+        self.shockwaves.append(ShockwaveEffect(
+            x=mid_x,
+            y=mid_y,
+            max_radius=115,
+            duration=0.48,
+            color_outer=color,
+            color_inner='#ffffff',
+            ring_width=4.0
+        ))
+
+        # 3. Soft ambient matrix flash in the ability's signature color
+        self.screen_flashes.append(ScreenFlash(
+            color=color,
+            initial_alpha=0.22,
+            duration=0.20
+        ))
+
+        # 4. Radiant burst of energy sparks around the incoming alert
+        spark_count = 8 if self.is_mobile else 18
+        for _ in range(spark_count):
+            ang = random.uniform(0, math.pi * 2)
+            spd = random.uniform(2.5, 6.0)
+            self.particles.append(Particle(
+                mid_x, mid_y, color,
+                vx=math.cos(ang) * spd,
+                vy=math.sin(ang) * spd,
+                style='spark',
+                size=random.uniform(2.5, 4.5),
+                life=0.45,
+                decay=0.035
+            ))
+
     def update_particles(self, delta_time):
         """Updates physics and timers for all active particles and visual effects."""
         for p in self.particles:
@@ -1101,7 +1192,7 @@ class CanvasRenderer:
 
         # 6.6 Floating combat badges (announcements floating above blocks with glowing capsule pills)
         for b in self.floating_badges:
-            b.draw(ctx, offset_x, offset_y)
+            b.draw(ctx, offset_x, offset_y, is_mobile=is_mobile)
 
         # 7. UI Panels: Mobile Mode vs Desktop Side Panels
         if is_mobile:

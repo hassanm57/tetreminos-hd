@@ -306,6 +306,8 @@ class TetrisGame:
             if self.current_piece.shape == 'O':
                 self.current_piece.x = 4
             self.current_piece.y = HIDDEN_ROWS - 2
+            if self.current_piece.ability != ABILITY_NONE:
+                self.pending_events.append({'type': 'power_spawn', 'ability': self.current_piece.ability})
 
         self.can_hold = False
         self.pending_events.append({'type': 'hold'})
