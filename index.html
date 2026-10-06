@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=24.0">
+  <link rel="stylesheet" href="style.css?v=25.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -218,7 +218,10 @@
         <div class="relic-modal-content lb-modal-content">
           <div class="lb-header-bar">
             <div class="lb-title-group">
-              <span class="lb-badge">GLOBAL NEURAL MATRIX</span>
+              <div class="lb-badge-row">
+                <span class="lb-badge">GLOBAL NEURAL MATRIX</span>
+                <span id="lbNetworkStatusBadge" class="lb-status-pill lb-status-offline">● LOCAL STORAGE ONLY</span>
+              </div>
               <h2 class="lb-title">🏆 HALL OF CHAMPIONS</h2>
             </div>
             <button id="btn-close-leaderboard" class="lb-close-btn" aria-label="Close">✕</button>
@@ -666,7 +669,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=24.0`);
+          const response = await fetch(`./src/${fileName}?v=25.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -994,6 +997,6 @@ import main
       bootEngine();
     });
   </script>
-  <script src="leaderboard.js?v=24.0"></script>
+  <script src="leaderboard.js?v=25.0"></script>
 </body>
 </html>

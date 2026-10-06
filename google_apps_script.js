@@ -114,11 +114,14 @@ function doPost(e) {
     
     // 2. Strict protection of Creator Callsign
     if (name.toLowerCase() === CREATOR_NAME.toLowerCase()) {
-      return jsonResponse({
-        status: "error",
-        code: "RESERVED_NAME",
-        message: "👑 'hassanm57' is the reserved Creator & Matrix Champion identifier. Please choose your own callsign!"
-      });
+      const passcode = String(body.passcode || "").trim();
+      if (passcode !== "Palaahassan") {
+        return jsonResponse({
+          status: "error",
+          code: "RESERVED_NAME",
+          message: "👑 'hassanm57' is the reserved Creator & Matrix Champion identifier. Please choose your own callsign!"
+        });
+      }
     }
     
     const sheetName = (mode === "CLASSIC") ? SPREADSHEET_CLASSIC : SPREADSHEET_ROGUE;

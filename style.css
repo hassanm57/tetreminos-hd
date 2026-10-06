@@ -1553,12 +1553,42 @@ body {
   text-align: left;
 }
 
+.lb-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .lb-badge {
   font-family: 'Rajdhani', sans-serif;
   font-size: 10px;
   font-weight: 700;
   color: #00f0ff;
   letter-spacing: 2px;
+}
+
+.lb-status-pill {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.lb-status-online {
+  background: rgba(0, 255, 128, 0.15);
+  border: 1px solid rgba(0, 255, 128, 0.5);
+  color: #00ff80;
+  box-shadow: 0 0 8px rgba(0, 255, 128, 0.3);
+}
+
+.lb-status-offline {
+  background: rgba(255, 180, 0, 0.15);
+  border: 1px solid rgba(255, 180, 0, 0.5);
+  color: #ffb400;
 }
 
 .lb-title {

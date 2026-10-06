@@ -233,13 +233,15 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
   const name = getPilotCallsign();
   const date = new Date().toISOString().split("T")[0];
 
+  const isCreatorAuthed = (localStorage.getItem("tetremino_is_creator") === "true");
   const payload = {
     pilotId: pilotId,
     name: name,
     score: Math.floor(score),
     mode: mode,
     lines: Math.floor(lines || 0),
-    stage: stage || (mode === "ROGUE" ? "Sector 1" : "Level 1")
+    stage: stage || (mode === "ROGUE" ? "Sector 1" : "Level 1"),
+    passcode: isCreatorAuthed ? "Palaahassan" : ""
   };
 
   // 1. Submit to Google Sheets if connected
@@ -247,8 +249,8 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
     try {
       fetch(GOOGLE_SHEET_LEADERBOARD_URL, {
         method: "POST",
-        mode: "no-cors", // Standard for Google Apps Script Web Apps
-        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       }).catch(e => console.warn("Background sheet sync notice:", e));
     } catch (e) {}
@@ -329,6 +331,28 @@ function loadLocalCache(mode) {
   return null;
 }
 
+function updateNetworkStatusUI() {
+  const badge = document.getElementById("lbNetworkStatusBadge");
+  const tip = document.querySelector(".lb-footer-tip");
+  const isOnline = !!(GOOGLE_SHEET_LEADERBOARD_URL && GOOGLE_SHEET_LEADERBOARD_URL.trim() !== "");
+  if (badge) {
+    if (isOnline) {
+      badge.textContent = "● WORLDWIDE SYNC ACTIVE";
+      badge.className = "lb-status-pill lb-status-online";
+    } else {
+      badge.textContent = "● LOCAL STORAGE (SETUP REQUIRED FOR CROSS-DEVICE)";
+      badge.className = "lb-status-pill lb-status-offline";
+    }
+  }
+  if (tip) {
+    if (!isOnline) {
+      tip.innerHTML = "💡 Cross-device syncing is offline. Connect your Google Sheet Web App URL to share scores across all devices worldwide!";
+    } else {
+      tip.innerHTML = "💡 Only the highest score per pilot is immortalized on the matrix.";
+    }
+  }
+}
+
 /**
  * UI Rendering and Modal Coordinators
  */
@@ -338,6 +362,7 @@ function openLeaderboardModal(mode) {
   if (!modal) return;
 
   modal.style.display = "flex";
+  updateNetworkStatusUI();
   updateCallsignUI();
   updateLeaderboardTabs();
   renderLeaderboardTable(currentLeaderboardMode);
