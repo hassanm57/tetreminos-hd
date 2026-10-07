@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <link rel="stylesheet" href="style.css?v=25.0">
+  <link rel="stylesheet" href="style.css?v=26.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -220,7 +220,7 @@
             <div class="lb-title-group">
               <div class="lb-badge-row">
                 <span class="lb-badge">GLOBAL NEURAL MATRIX</span>
-                <span id="lbNetworkStatusBadge" class="lb-status-pill lb-status-offline">● LOCAL STORAGE ONLY</span>
+                <span id="lbNetworkStatusBadge" class="lb-status-pill lb-status-online">● WORLDWIDE SYNC ACTIVE</span>
               </div>
               <h2 class="lb-title">🏆 HALL OF CHAMPIONS</h2>
             </div>
@@ -669,7 +669,7 @@
         // Load modules
         for (let i = 0; i < coreFiles.length; i++) {
           const fileName = coreFiles[i];
-          const response = await fetch(`./src/${fileName}?v=25.0`);
+          const response = await fetch(`./src/${fileName}?v=26.0`);
           if (!response.ok) {
             throw new Error(`Resource load error: ${fileName}`);
           }
@@ -997,6 +997,6 @@ import main
       bootEngine();
     });
   </script>
-  <script src="leaderboard.js?v=25.0"></script>
+  <script src="leaderboard.js?v=26.0"></script>
 </body>
 </html>

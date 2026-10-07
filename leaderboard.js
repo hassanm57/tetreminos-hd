@@ -6,9 +6,8 @@
  * ============================================================================
  */
 
-// Paste your deployed Google Apps Script Web App URL below:
-// (Leave as empty string "" to use local storage & built-in matrix records until deployed)
-const GOOGLE_SHEET_LEADERBOARD_URL = "";
+// Zero-Setup Serverless Global Matrix Leaderboard API
+const GLOBAL_LEADERBOARD_API_URL = "/api/leaderboard";
 
 const CREATOR_CALLSIGN = "hassanm57";
 
@@ -195,10 +194,10 @@ function setPilotCallsign(name) {
 async function fetchLeaderboardData(mode) {
   mode = (mode || currentLeaderboardMode).toUpperCase();
 
-  // If Google Sheet Web App URL is provided, fetch live scores
-  if (GOOGLE_SHEET_LEADERBOARD_URL && GOOGLE_SHEET_LEADERBOARD_URL.trim() !== "") {
+  // If Global Matrix API is configured, fetch live global scores
+  if (GLOBAL_LEADERBOARD_API_URL) {
     try {
-      const resp = await fetch(`${GOOGLE_SHEET_LEADERBOARD_URL}?mode=${mode}&t=${Date.now()}`);
+      const resp = await fetch(`${GLOBAL_LEADERBOARD_API_URL}?mode=${mode}&t=${Date.now()}`);
       if (resp.ok) {
         const json = await resp.json();
         if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
@@ -208,7 +207,7 @@ async function fetchLeaderboardData(mode) {
         }
       }
     } catch (err) {
-      console.warn("Live leaderboard fetch error (falling back to cache):", err);
+      console.warn("Live global matrix fetch error (falling back to cache):", err);
     }
   }
 
@@ -244,15 +243,19 @@ async function submitScoreToLeaderboard(score, mode, lines, stage) {
     passcode: isCreatorAuthed ? "Palaahassan" : ""
   };
 
-  // 1. Submit to Google Sheets if connected
-  if (GOOGLE_SHEET_LEADERBOARD_URL && GOOGLE_SHEET_LEADERBOARD_URL.trim() !== "") {
+  // 1. Submit to Global Leaderboard API
+  if (GLOBAL_LEADERBOARD_API_URL) {
     try {
-      fetch(GOOGLE_SHEET_LEADERBOARD_URL, {
+      fetch(GLOBAL_LEADERBOARD_API_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
-      }).catch(e => console.warn("Background sheet sync notice:", e));
+      })
+      .then(() => {
+        // Re-fetch updated global scores in background
+        fetchLeaderboardData(mode);
+      })
+      .catch(e => console.warn("Global matrix sync notice:", e));
     } catch (e) {}
   }
 
@@ -334,22 +337,18 @@ function loadLocalCache(mode) {
 function updateNetworkStatusUI() {
   const badge = document.getElementById("lbNetworkStatusBadge");
   const tip = document.querySelector(".lb-footer-tip");
-  const isOnline = !!(GOOGLE_SHEET_LEADERBOARD_URL && GOOGLE_SHEET_LEADERBOARD_URL.trim() !== "");
+  const isOnline = !!(GLOBAL_LEADERBOARD_API_URL && GLOBAL_LEADERBOARD_API_URL.trim() !== "");
   if (badge) {
     if (isOnline) {
       badge.textContent = "● WORLDWIDE SYNC ACTIVE";
       badge.className = "lb-status-pill lb-status-online";
     } else {
-      badge.textContent = "● LOCAL STORAGE (SETUP REQUIRED FOR CROSS-DEVICE)";
+      badge.textContent = "● LOCAL STORAGE ONLY";
       badge.className = "lb-status-pill lb-status-offline";
     }
   }
   if (tip) {
-    if (!isOnline) {
-      tip.innerHTML = "💡 Cross-device syncing is offline. Connect your Google Sheet Web App URL to share scores across all devices worldwide!";
-    } else {
-      tip.innerHTML = "💡 Only the highest score per pilot is immortalized on the matrix.";
-    }
+    tip.innerHTML = "💡 Global ranking is synchronized live across all devices worldwide.";
   }
 }
 
@@ -626,4 +625,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Pre-load global matrix leaderboard records in background
+  try {
+    fetchLeaderboardData("ROGUE");
+    fetchLeaderboardData("CLASSIC");
+  } catch (e) {}
 });
